@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_TREELEVEL: return 'T';
       case FRUIT_SEED_OVERLOAD: return 'O';
       case FRUIT_SPORES_OVERLOAD: return 'MO'; // mo = mushroom overload
+      case FRUIT_GROW_ENHANCE: return 'E';
     }
     return '?';
   }
@@ -87,6 +88,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_TREELEVEL: return 'treelevel prod boost';
     case FRUIT_SEED_OVERLOAD: return 'seeds overload';
     case FRUIT_SPORES_OVERLOAD: return 'spores overload';
+    case FRUIT_GROW_ENHANCE: return 'grow and enhance';
   }
   return 'unknown';
 }
@@ -123,6 +125,7 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_TREELEVEL: return 'boosts the production boost that is given by the tree level, the shown target multiplier is reached when reaching tree level where next fruit tier could drop.'; // that is, targeted to get close at tree levels 20 levels above where this tier of fruit drops
     case FRUIT_SEED_OVERLOAD: return 'boosts seeds, but increases mushroom seed consumption by the same amount';
     case FRUIT_SPORES_OVERLOAD: return 'boosts spores, but the additional spores require much higher seeds consumption';
+    case FRUIT_GROW_ENHANCE: return 'boosts grow speed and enhances other abilities. ';
   }
   return 'unknown';
 }
@@ -583,6 +586,46 @@ function showFruitMarkColorDialog(f, opt_onclose) {
   }
 }
 
+function getFruitAbilityDetailsText(f, a, level) {
+  var text = upper(getFruitAbilityName(a));
+  if(!isInherentAbility(a)) text += ' ' + toRomanUpTo(level);
+  text += '<br>';
+  //text += 'Cost to level: ????';
+  text += upper(getFruitAbilityDescription(a));
+  text += '<br>';
+
+
+  if(isInherentAbility(a)) {
+    text += 'Boost: ' + getFruitBoost(undefined, a, level, f.tier).toPercentString();
+    text += '<br>';
+    text += '<br>';
+    text += 'This is an inherent fruit ability. It doesn\'t take up a regular ability slot for this fruit tier. It cannot be upgraded nor moved.';
+  } else {
+    var cost = getFruitAbilityCost(a, level, f.tier);
+
+    var percent = getFruitBoost(undefined, a, level, f.tier).toPercentString();
+    var percent2 = getFruitBoost(undefined, a, level + 1, f.tier).toPercentString();
+
+    text += 'Current level: ' + percent;
+    if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(undefined, a, level, f.tier, undefined, 1).toPercentString() + ')';
+
+    var enhance = getFruitAbilityFor(f, FRUIT_GROW_ENHANCE, true);
+    if(enhance && a != FRUIT_GROW_ENHANCE) {
+      text += '<br>';
+      var percent3 = getFruitBoost(f, a, level, f.tier).toPercentString();
+      text += 'With ehnance: ' + percent3;
+    }
+
+    text += '<br>';
+    text += 'Next level: ' + percent2;
+    if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(undefined, a, level + 1, f.tier, undefined, 1).toPercentString() + ')';
+    text += ', cost: ' + cost.toString();
+
+  }
+
+  return text;
+}
+
 function fillFruitDialog(dialog, f, opt_selected) {
   dialog.content.clear();
   dialog.icon.clear();
@@ -635,7 +678,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     var level = f.levels[i];
 
     text = upper(f.abilityToString(i));
-    text += ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
+    text += ' (' + getFruitBoost(undefined, a, level, f.tier).toPercentString() + ')';
 
     centerText2(flex.div);
 
@@ -647,10 +690,12 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
     styleButton0(flex.div);
 
-    addButtonAction(flex.div, bind(function(i) {
+    registerAction(flex.div, bind(function(i) {
       selected = (i == selected) ? -1 : i;
       updateSelected();
-    }, i));
+    }, i), text, {
+      tooltip: getFruitAbilityDetailsText(f, a, level) + '<br><br>Click to expand this ability and show its level up buttons.'
+    });
   }
 
   y += 0.02;
@@ -828,28 +873,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
     y += h;
 
-    text = upper(getFruitAbilityName(a));
-    if(!isInherentAbility(a)) text += ' ' + toRomanUpTo(level);
-    text += '<br>';
-    //text += 'Cost to level: ????';
-    text += upper(getFruitAbilityDescription(a));
-    text += '<br>';
-
-
-    if(isInherentAbility(a)) {
-      text += 'Boost: ' + getFruitBoost(a, level, f.tier).toPercentString();
-      text += '<br>';
-      text += '<br>';
-      text += 'This is an inherent fruit ability. It doesn\'t take up a regular ability slot for this fruit tier. It cannot be upgraded nor moved.';
-    } else {
-      var cost = getFruitAbilityCost(a, level, f.tier);
-      text += 'Current level: ' + getFruitBoost(a, level, f.tier).toPercentString();
-      if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(a, level, f.tier, undefined, 1).toPercentString() + ')';
-      text += '<br>';
-      text += 'Next level: ' + getFruitBoost(a, level + 1, f.tier).toPercentString()
-      if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(a, level + 1, f.tier, undefined, 1).toPercentString() + ')';
-      text += ', cost: ' + cost.toString();
-
+    if(!isInherentAbility(a)) {
       levelButton.textEl.innerText = 'Buy 1';
       var available = state.res.essence.sub(f.essence);
       if(available.lt(cost.essence)) {
@@ -912,7 +936,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
       }, 'Close fruit ability popup', {tooltip:('Close fruit ability popup')});
 
     }
-    textFlex.div.innerHTML = text;
+    textFlex.div.innerHTML = getFruitAbilityDetailsText(f, a, level);
   };
 
   updateSelected();
@@ -1072,11 +1096,11 @@ function getFruitTooltipText(f, opt_label) {
     var level = f.levels[i];
     text += '<br>';
     if(isInherentAbility(a)) {
-      text += 'Extra ability: ' + upper(f.abilityToString(i)) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
+      text += 'Extra ability: ' + upper(f.abilityToString(i)) + ' (' + getFruitBoost(undefined, a, level, f.tier).toPercentString() + ')';
     } else if(a == FRUIT_NONE) {
       text += 'Ability: ' + upper(f.abilityToString(i));
     } else {
-      text += 'Ability: ' + upper(f.abilityToString(i)) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
+      text += 'Ability: ' + upper(f.abilityToString(i)) + ' (' + getFruitBoost(undefined, a, level, f.tier).toPercentString() + ')';
     }
   }
   text += '<br>';

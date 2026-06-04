@@ -340,6 +340,7 @@ function makePond3Dialog() {
     closeFun:function() {
       pondDialogFlex = undefined;
       abovePondTextFlex = undefined;
+      fishswapmode = false;
     },
     shortcutfun:(haveFishes() ? pondDialogShortcutFun : undefined),
     help:helpfun
@@ -444,7 +445,11 @@ function getFishInfoHTMLBreakdown(f, c) {
   return result;
 }
 
-function makePondDialog(x, y, opt_override_mistletoe) {
+var fishswapmode = false;
+var fishswapx = 0;
+var fishswapy = 0;
+
+function makePondDialog(x, y) {
   var f = state.pond[y][x];
   var fd = pondDivs[y][x];
 
@@ -474,7 +479,7 @@ function makePondDialog(x, y, opt_override_mistletoe) {
     var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.7 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.765 + buttonshift).div;
     var button2 = new Flex(dialog.content, [0, 0, 0.2], [0.77 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.835 + buttonshift).div;
     var button3 = new Flex(dialog.content, [0, 0, 0.2], [0.84 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.905 + buttonshift).div;
-    //var button4 = new Flex(dialog.content, [0, 0, 0.2], [0.91 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.975 + buttonshift).div;
+    var button4 = new Flex(dialog.content, [0, 0, 0.2], [0.91 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.975 + buttonshift).div;
     var last0 = undefined;
     var button;
 
@@ -517,6 +522,17 @@ function makePondDialog(x, y, opt_override_mistletoe) {
       addAction({type:ACTION_DELETE_FISH, x:x, y:y});
       closeDialogsUpTo(1); // keep pond dialog itself open
       update(); // do update immediately rather than wait for tick, for faster feeling response time
+    });
+
+    button = button4;
+    styleButton(button);
+    button.textEl.innerText = 'Swap fish location';
+    registerTooltip(button, 'Swap this fish with another one. Click the other fish to swap the position with. This does not affect any stats, only the visual layout, since the location of fishes does not matter for stats.');
+    addButtonAction(button, function() {
+      fishswapmode = true;
+      fishswapx = x;
+      fishswapy = y;
+      closeTopDialog();
     });
 
     /*styleButton(button2);
@@ -611,7 +627,13 @@ function initPondUI(flex) {
 
       addButtonAction(div, bind(function(x, y, div, e) {
         var f = state.pond[y][x];
-        if(f.index == 0) {
+        if(fishswapmode) {
+          fishswapmode = false;
+          if(x != fishswapx || y != fishswapy) {
+            addAction({type:ACTION_SWAP_FISH, x0:fishswapx, y0:fishswapy, x1:x, y1:y});
+            update();
+          }
+        } else if(f.index == 0) {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
 

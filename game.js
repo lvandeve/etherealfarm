@@ -993,6 +993,7 @@ var ACTION_REPLACE3 = action_index++;
 var ACTION_PLANT_FISH = action_index++;
 var ACTION_DELETE_FISH = action_index++;
 var ACTION_REPLACE_FISH = action_index++;
+var ACTION_SWAP_FISH = action_index++;
 var ACTION_STORE_UNDO_BEFORE_AUTO_ACTION = action_index++; // saves undo and disables (marks as triggered without doing anything) the indicated auto-action, used by automaton when it does auto-action, to allow undoing it. (any action caused by automaton is marked with by_automaton and not stored for undo, but the ACTION_STORE_UNDO_BEFORE_AUTO_ACTION is an exception and is saved, to allow the player to undo an unwanted/unexpected auto-action, and auto-transcends)
 var ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION = action_index++; // used to not store undo before the second part of auto-actions, used when this one is triggered by the player (so actions don't have by_automaton marked)
 var ACTION_TD_GO = action_index++;
@@ -2398,19 +2399,19 @@ function addRandomFruitForLevel(treelevel, infernal, opt_nodouble) {
     var num_abilities = getNumFruitAbilities(tier);
 
     var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_BRASSICA, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
-    if(tier >= 5) {
+    if(tier >= 5) { // platinum and up
       abilities.push(FRUIT_RESINBOOST);
       abilities.push(FRUIT_TWIGSBOOST);
       abilities.push(FRUIT_NUTBOOST);
       abilities.push(FRUIT_BEEBOOST);
     }
-    if(tier >= 7) {
+    if(tier >= 7) { // sapphire and up
       util.removeFromArray(abilities, FRUIT_MUSHEFF); // remove the possibility to get the bad FRUIT_MUSHEFF ability from now on
       abilities.push(FRUIT_MIX);
       abilities.push(FRUIT_TREELEVEL);
       abilities.push(FRUIT_SEED_OVERLOAD);
     }
-    if(tier >= 9) {
+    if(tier >= 9) { // emerald and up
       // the bee and weather abilities is removed from emerald fruits, to require more variability in how to use its 6 slots
       // the reason is that there are 5 abilities that all do the same thing, which is to boost both seeds and spores:
       // flower boost, brassica boost, bee boost, treelevel boost, weather boost (because due to the permanent weather it's also perma-active with large multiplier)
@@ -2420,10 +2421,14 @@ function addRandomFruitForLevel(treelevel, infernal, opt_nodouble) {
       // note that mix also does something somewhat similar, but to a lesser extent so that one remains
       abilities.push(FRUIT_SPORES_OVERLOAD);
     }
-    if(tier >= 10) {
+    if(tier >= 10) { // ruby and up
       util.removeFromArray(abilities, FRUIT_RESINBOOST);
       util.removeFromArray(abilities, FRUIT_TWIGSBOOST);
       abilities.push(FRUIT_RESIN_TWIGS);
+    }
+    if(tier >= 11) { // diamond and up
+      util.removeFromArray(abilities, FRUIT_GROWSPEED);
+      abilities.push(FRUIT_GROW_ENHANCE);
     }
 
     if(fruit.type == 11) {
@@ -5160,7 +5165,7 @@ var update = function(opt_ignorePause) {
               showMessage('already have the max amount of squirrels, cannot place more', C_INVALID, 0, 0);
             }
             ok = false;
-          } else if(c.index == mistletoe2_0 && (state.crop2count[mistletoe2_0] > (haveEtherealMistletoeUpgrade(mistle_upgrade_second_mistletoe) ? 1 : 0))) {
+          } else if(c.index == mistletoe2_0 && (state.crop2count[mistletoe2_0] >= getMaxNumEtherealMistletoes())) {
             if(state.crop2count[mistletoe2_0] == 1) {
               showMessage('already have ethereal mistletoe, cannot place more', C_INVALID, 0, 0);
             } else {
@@ -5475,6 +5480,20 @@ var update = function(opt_ignorePause) {
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
         }
+      } else if(type == ACTION_SWAP_FISH) {
+        var x0 = action.x0;
+        var y0 = action.y0;
+        var x1 = action.x1;
+        var y1 = action.y1;
+        var f0 = state.pond[y0][x0];
+        var f1 = state.pond[y1][x1];
+        f0.x = x1;
+        f0.y = y1;
+        f1.x = x0;
+        f1.y = y0;
+        state.pond[y0][x0] = f1;
+        state.pond[y1][x1] = f0;
+        store_undo = true;
       } else if(type == ACTION_FERN) {
         if(state.fern && state.fernx == action.x && state.ferny == action.y) {
           clickedfern = true;
@@ -6449,17 +6468,17 @@ var update = function(opt_ignorePause) {
     state.fruitspores_total = state.c_res.spores.add(actualgain.spores);
     var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST, true);
     if(resin_fruit_level) {
-      var resin_fruit_bonus = getFruitBoost(FRUIT_RESINBOOST, resin_fruit_level, getFruitTier(true));
+      var resin_fruit_bonus = getFruitBoost(getActiveFruit(), FRUIT_RESINBOOST, resin_fruit_level, getFruitTier(true));
       state.resinfruitspores.addInPlace(actualgain.spores.mul(resin_fruit_bonus));
     }
     var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, true);
     if(twigs_fruit_level) {
-      var twigs_fruit_bonus = getFruitBoost(FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(true));
+      var twigs_fruit_bonus = getFruitBoost(getActiveFruit(), FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(true));
       state.twigsfruitspores.addInPlace(actualgain.spores.mul(twigs_fruit_bonus));
     }
     var resin_twigs_fruit_level = getFruitAbility(FRUIT_RESIN_TWIGS, true);
     if(resin_twigs_fruit_level) {
-      var resin_twigs_fruit_bonus = getFruitBoost(FRUIT_RESIN_TWIGS, resin_twigs_fruit_level, getFruitTier(true));
+      var resin_twigs_fruit_bonus = getFruitBoost(getActiveFruit(), FRUIT_RESIN_TWIGS, resin_twigs_fruit_level, getFruitTier(true));
       state.resinfruitspores.addInPlace(actualgain.spores.mul(resin_twigs_fruit_bonus));
       state.twigsfruitspores.addInPlace(actualgain.spores.mul(resin_twigs_fruit_bonus));
     }

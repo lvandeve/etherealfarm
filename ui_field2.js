@@ -54,12 +54,6 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   }
 
   if(c.index == mistletoe2_0) {
-    if(haveEtherealMistletoeUpgrade(mistle_upgrade_second_mistletoe)) {
-      result += ' Can have only max two. Their neighbor bonus does not stack to the same neighbor.';
-    } else {
-      result += ' Can have only max one.';
-    }
-
     result += '<br/>';
     var m = mistletoeupgrades[state.mistletoeupgrade];
     var m2 = state.mistletoeupgrades[state.mistletoeupgrade];

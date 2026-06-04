@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -116,8 +116,8 @@ function makeEtherealMistletoeDialog(x, y) {
     icon:c.image[4],
     title:'Ethereal mistletoe',
     bgstyle:'efDialogTranslucent',
-    functions:[function() {makeField2Dialog(x, y, true); return true;}],
-    names:['crop info'],
+    //functions:[function() {makeField2Dialog(x, y, true); return true;}],
+    //names:['crop info'],
     scrollable:true,
     help:function(){showRegisteredHelpDialog(41, true);},
     cancelname:'close',
@@ -155,8 +155,6 @@ function makeEtherealMistletoeDialog(x, y) {
     update(); // do update immediately rather than wait for tick, for faster feeling response time
   });
 
-  buttonpos += buttonextraseparater;
-
   if(!tree_ok) {
     var textel = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], 0.8);
     if(state.etherealmistletoetreepositionok) {
@@ -166,6 +164,16 @@ function makeEtherealMistletoeDialog(x, y) {
     }
     return;
   }
+
+  var regularbutton = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], buttonpos + buttonh).div;
+  buttonpos += buttonh;
+  styleButton(regularbutton);
+  regularbutton.textEl.innerText = 'Show regular crop dialog';
+  registerTooltip(regularbutton, 'Shows the regular crop dialog with standard crop details and actions.');
+  addButtonAction(regularbutton, function() {
+    makeField2Dialog(x, y, true);
+  });
+  buttonpos += buttonextraseparater;
 
   // of all the standard plant buttons, the delete button is also shown in the mistletoe dialog. Others can be accessed through the 'crop info' button at the bottom
   var cancelbutton = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], buttonpos + buttonh).div;
@@ -284,6 +292,7 @@ function makeEtherealMistletoeDialog(x, y) {
   if(getEtherealMistletoeEvolutionLevel() > 0) {
     text2 += 'Evolution level: ' + (getEtherealMistletoeEvolutionLevel()) + '<br/>';
   }
+  text2 += 'Can have only max ' + getMaxNumEtherealMistletoes() + ' of this crop, and it must be planted next to the ethreal tree to work.<br/>';
 
   textel2.div.innerHTML = text2;
 

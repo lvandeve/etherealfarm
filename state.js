@@ -2981,6 +2981,11 @@ function getEtherealMistletoeLotusNeighborBoost() {
   return getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor);
 }
 
+function getMaxNumEtherealMistletoes() {
+  if(haveEtherealMistletoeUpgrade(mistle_upgrade_second_mistletoe)) return 2;
+  return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 

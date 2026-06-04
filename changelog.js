@@ -30,6 +30,13 @@ function getChangeLog() {
     }
   }
 
+  text += '0.18.3 (2026-06-04)';
+  text += '<br/>• Added diamond fruit tier, starting at level 220.';
+  text += '<br/>• In the infinity field, increased the lotus to mushroom boost from +125% to +150%.'; // because sometimes the lotus boost was barely worth it, and putting a third type of crop next to mushroom should have some decent effect
+  text += '<br/>• Added "swap fish" feature to the pond. This is useful to visually rearrange the layout, it has no effect on stats since fish positions do not currently matter.';
+  text += '<br/>• Various tweaks and fixes.'; //e.g. reworked how showing the regular crop dialog for ethereal mistletoe works to be more discoverable
+  text += '<br/><br/>';
+
   text += '0.18.2 (2026-04-26)';
   text += '<br/>• Added a second prestige level for all prestigeable crops: nuts, berries, flowers and mushrooms';
   text += '<br/>&nbsp;&nbsp;◦ Note: the grow times of the berries are not final and may be tweaked in a next update';

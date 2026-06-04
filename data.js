@@ -134,7 +134,7 @@ function getWeatherBoost() {
 
   var level = getFruitAbility(FRUIT_WEATHER, true);
   if(level > 0) {
-    var mul = Num(1).add(getFruitBoost(FRUIT_WEATHER, level, getFruitTier(true)));
+    var mul = Num(1).add(getFruitBoost(getActiveFruit(), FRUIT_WEATHER, level, getFruitTier(true)));
     result.mulInPlace(mul);
   }
   return result;
@@ -337,9 +337,15 @@ Crop.prototype.getPlantTime = function() {
   if(min > planttime * 0.5) min = planttime * 0.5;
 
 
-  var level = getFruitAbility(FRUIT_GROWSPEED, true);
-  if(level > 0) {
-    var mul = Num(1).sub(getFruitBoost(FRUIT_GROWSPEED, level, getFruitTier(true))).valueOf();
+  var level_fruit_grow = getFruitAbility(FRUIT_GROWSPEED, true);
+  if(level_fruit_grow > 0) {
+    var mul = Num(1).sub(getFruitBoost(getActiveFruit(), FRUIT_GROWSPEED, level_fruit_grow, getFruitTier(true))).valueOf();
+    result *= mul;
+  }
+
+  var level_fruit_grow2 = getFruitAbility(FRUIT_GROW_ENHANCE, true);
+  if(level_fruit_grow2 > 0) {
+    var mul = Num(1).sub(getFruitBoost(getActiveFruit(), FRUIT_GROW_ENHANCE, level_fruit_grow2, getFruitTier(true))).valueOf();
     result *= mul;
   }
 
@@ -522,7 +528,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, pretend, breakdown)
     if(fruit_infernal[0] > 0 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN || this.type == CROPTYPE_MUSH)) {
       var level = fruit_infernal[0];
       var ability = fruit_infernal[1];
-      var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier(true), true));
+      var mul = Num(1).add(getFruitBoost(getActiveFruit(), ability, level, getFruitTier(true), true));
       result.mulInPlace(mul);
       if(breakdown) breakdown.push(['fruit: infernal', true, mul, result.clone()]);
     }
@@ -814,7 +820,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
       var level = getFruitAbility(FRUIT_BERRYBOOST, true);
       if(level > 0) {
-        var mul = getFruitBoost(FRUIT_BERRYBOOST, level, getFruitTier(true)).addr(1);
+        var mul = getFruitBoost(getActiveFruit(), FRUIT_BERRYBOOST, level, getFruitTier(true)).addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_BERRYBOOST), true, mul, result.clone()]);
       }
@@ -822,13 +828,13 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(this.type == CROPTYPE_MUSH) {
       var level = getFruitAbility(FRUIT_MUSHBOOST, true);
       if(level > 0) {
-        var mul = getFruitBoost(FRUIT_MUSHBOOST, level, getFruitTier(true)).addr(1);
+        var mul = getFruitBoost(getActiveFruit(), FRUIT_MUSHBOOST, level, getFruitTier(true)).addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MUSHBOOST), true, mul, result.clone()]);
       }
       var level = getFruitAbility(FRUIT_MUSHEFF, true);
       if(level > 0) {
-        var mul = Num(1).sub(getFruitBoost(FRUIT_MUSHEFF, level, getFruitTier(true)));
+        var mul = Num(1).sub(getFruitBoost(getActiveFruit(), FRUIT_MUSHEFF, level, getFruitTier(true)));
         result.seeds.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MUSHEFF), true, mul, result.clone()]);
       }
@@ -836,7 +842,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(this.type == CROPTYPE_NUT) {
       var level = getFruitAbility(FRUIT_NUTBOOST, true);
       if(level > 0) {
-        var mul = getFruitBoost(FRUIT_NUTBOOST, level, getFruitTier(true)).addr(1);
+        var mul = getFruitBoost(getActiveFruit(), FRUIT_NUTBOOST, level, getFruitTier(true)).addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_NUTBOOST), true, mul, result.clone()]);
       }
@@ -845,7 +851,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       // also applied to mushroom because overload increases mushroom's seed consumption equally
       var level = getFruitAbility(FRUIT_SEED_OVERLOAD, true);
       if(level > 0) {
-        var mul = getFruitBoost(FRUIT_SEED_OVERLOAD, level, getFruitTier(true)).addr(1);
+        var mul = getFruitBoost(getActiveFruit(), FRUIT_SEED_OVERLOAD, level, getFruitTier(true)).addr(1);
         result.seeds.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_SEED_OVERLOAD), true, mul, result.clone()]);
       }
@@ -853,7 +859,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(this.type == CROPTYPE_MUSH) {
       var level = getFruitAbility(FRUIT_SPORES_OVERLOAD, true);
       if(level > 0) {
-        var mul = getFruitBoost(FRUIT_SPORES_OVERLOAD, level, getFruitTier(true)).addr(1);
+        var mul = getFruitBoost(getActiveFruit(), FRUIT_SPORES_OVERLOAD, level, getFruitTier(true)).addr(1);
         var seedmul = spores_overload_penalty;
         if(mul.ltr(1000)) {
           /*
@@ -1403,33 +1409,34 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
     if(this.type == CROPTYPE_FLOWER) {
       var level = getFruitAbility(FRUIT_FLOWERBOOST, true);
       if(level > 0) {
-        var mul = getFruitBoost(FRUIT_FLOWERBOOST, level, getFruitTier(true)).addr(1);
+        var mul = getFruitBoost(getActiveFruit(), FRUIT_FLOWERBOOST, level, getFruitTier(true)).addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_FLOWERBOOST), true, mul, result.clone()]);
       }
     }
 
     if(this.type == CROPTYPE_STINGING) {
-      var level = getFruitAbility(FRUIT_NETTLEBOOST, true);
+      var level_nettle = getFruitAbility(FRUIT_NETTLEBOOST, true);
       var mul0;
-      if(level > 0) {
-        var mul = getFruitBoost(FRUIT_NETTLEBOOST, level, getFruitTier(true)).addr(1);
+      if(level_nettle > 0) {
+        var mul = getFruitBoost(getActiveFruit(), FRUIT_NETTLEBOOST, level_nettle, getFruitTier(true)).addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_NETTLEBOOST), true, mul, result.clone()]);
         mul0 = mul;
       }
-      var level2 = getFruitAbility(FRUIT_MIX, true);
-      if(level2 > 0) {
+
+      var level_mix = getFruitAbility(FRUIT_MIX, true);
+      if(level_mix > 0) {
         var mul;
-        if(level > 0) {
-          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_nettle).addr(1);
+        if(level_nettle > 0) {
+          mul = getFruitBoost(getActiveFruit(), FRUIT_MIX, level_mix, getFruitTier(true)).mulr(mix_mul_nettle).addr(1);
           // combined with pure nettle ability. Don't take the cube root now, that'd cripple it too much in this case,
           // instead make it additive. Which still cripples it a lot (it's worth only in the order of 2x, while the pure nettle ability is like 10000x or so, but at least it's not 1.02x which it'd be if we also did cuberoot thing now)
           var sum = mul.add(mul0).subr(1); // effective combined multiplier
           mul = sum.div(mul0);
         } else {
           // adjust with that cuberoot-ish power
-          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_nettle).addr(1).powr(mix_pow_nettle);
+          mul = getFruitBoost(getActiveFruit(), FRUIT_MIX, level_mix, getFruitTier(true)).mulr(mix_mul_nettle).addr(1).powr(mix_pow_nettle);
         }
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MIX), true, mul, result.clone()]);
@@ -1636,26 +1643,27 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
   // fruit
   if(basic != 2) {
     if(this.type == CROPTYPE_BEE) {
-      var level = getFruitAbility(FRUIT_BEEBOOST, true);
+      var level_bee = getFruitAbility(FRUIT_BEEBOOST, true);
       var mul0;
-      if(level > 0) {
-        var mul = getFruitBoost(FRUIT_BEEBOOST, level, getFruitTier(true)).addr(1);
+      if(level_bee > 0) {
+        var mul = getFruitBoost(getActiveFruit(), FRUIT_BEEBOOST, level_bee, getFruitTier(true)).addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_BEEBOOST), true, mul, result.clone()]);
         mul0 = mul;
       }
-      var level2 = getFruitAbility(FRUIT_MIX, true);
-      if(level2 > 0) {
+
+      var level_mix = getFruitAbility(FRUIT_MIX, true);
+      if(level_mix > 0) {
         var mul;
-        if(level > 0) {
-          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_bee).addr(1);
+        if(level_bee > 0) {
+          mul = getFruitBoost(getActiveFruit(), FRUIT_MIX, level_mix, getFruitTier(true)).mulr(mix_mul_bee).addr(1);
           // combined with pure bee ability. Don't take the cube root now, that'd cripple it too much in this case,
           // instead make it additive. Which still cripples it a lot (it's worth only in the order of 2x, while the pure bee ability is like 10000x or so, but at least it's not 1.02x which it'd be if we also did cuberoot thing now)
           var sum = mul.add(mul0).subr(1); // effective combined multiplier
           mul = sum.div(mul0);
         } else {
           // adjust with that cuberoot-ish power
-          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_bee).addr(1).powr(mix_pow_bee);
+          mul = getFruitBoost(getActiveFruit(), FRUIT_MIX, level_mix, getFruitTier(true)).mulr(mix_mul_bee).addr(1).powr(mix_pow_bee);
         }
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MIX), true, mul, result.clone()]);
@@ -1802,24 +1810,24 @@ Crop.prototype.getLeech = function(f, pretend, breakdown, croptype) {
   }
 
   if(croptype != CROPTYPE_NUT && pretend != 6) {
-    var level = getFruitAbility(FRUIT_BRASSICA, true);
-    var level2 = getFruitAbility(FRUIT_MIX, true);
-    if((level > 0 || level2 > 0) && state.challenge != challenge_wasabi) {
-      var mul = level > 0 ? getFruitBoost(FRUIT_BRASSICA, level, getFruitTier(true)).addr(1) : (new Num(1));
+    var level_brassica = getFruitAbility(FRUIT_BRASSICA, true);
+    var level_mix = getFruitAbility(FRUIT_MIX, true);
+    if((level_brassica > 0 || level_mix > 0) && state.challenge != challenge_wasabi) {
+      var mul = level_brassica > 0 ? getFruitBoost(getActiveFruit(), FRUIT_BRASSICA, level_brassica, getFruitTier(true)).addr(1) : (new Num(1));
       var mix_pow = (croptype == CROPTYPE_BERRY) ? mix_pow_brassica_berry : mix_pow_brassica_mush;
 
       var mul_b = mul; // multiplier of pure brassica ability part only
       var mul_m = null; // multiplier of fruit mix ability, combined with mul_b to form the final mul
 
-      if(level2 > 0) {
-        if(level > 0) {
+      if(level_mix > 0) {
+        if(level_brassica > 0) {
           // pure brassica ability also present, merely additively add this one, and without the cuberoot-ish reduction
-          var mul2 = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_brassica).addr(1);
+          var mul2 = getFruitBoost(getActiveFruit(), FRUIT_MIX, level_mix, getFruitTier(true)).mulr(mix_mul_brassica).addr(1);
           var sum = mul.add(mul2).subr(1); // effective combined multiplier
           mul_m = sum.div(mul_b);
           mul = sum;
         } else {
-          var b = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_brassica);
+          var b = getFruitBoost(getActiveFruit(), FRUIT_MIX, level_mix, getFruitTier(true)).mulr(mix_mul_brassica);
 
           // normally, like for bee and nettle for FRUIT_MIX, the formula for mul_m would now be: mul_m = b.addr(1).powr(mix_pow), where 1 is added to turn bonus into multiplier, then the power applied
           // however, brassica copying is not itself the actual bonus / multiplier you get from crops: if brassica copying is 100% it multiplies production by 2x. If there's a bonus of 50% (1.5x) added here, then it doesn't multiply production by 1.5x, but instead it brings it from 2x to 2.5x, effectively a bonus of only 25%
@@ -1846,11 +1854,11 @@ Crop.prototype.getLeech = function(f, pretend, breakdown, croptype) {
         winter_malus = mul2.div(mul);
       }
 
-      if(level > 0) {
+      if(level_brassica > 0) {
         result.mulInPlace(mul_b);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_BRASSICA), true, mul_b, result.clone()]);
       }
-      if(level2 > 0) {
+      if(level_mix > 0) {
         result.mulInPlace(mul_m);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MIX), true, mul_m, result.clone()]);
       }
@@ -4915,10 +4923,10 @@ var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), default_ethereal
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', function() {
-  return 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max ' + getMaxNumEtherealAutomatons() + '. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.';
+  return 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have only max ' + getMaxNumEtherealAutomatons() + '. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.';
 } ,images_automaton);
 var squirrel2_0 = registerSquirrel2('squirrel', 5, 0, Res({resin:10}), 1.5, 'Boosts neighbors', function() {
-  return 'Unlocks nuts and squirrel upgrades. Boosts 8 ethereal neighbors. Can have max ' + getMaxNumEtherealSquirrels() + '.';
+  return 'Unlocks nuts and squirrel upgrades. Boosts 8 ethereal neighbors. Can have only max ' + getMaxNumEtherealSquirrels() + '.';
 }, images_squirrel);
 
 // berries2
@@ -4990,7 +4998,10 @@ var bee2_2 = registerBeehive2('queen bee', 19, 2, Res({resin:1e21}), default_eth
 var bee2_3 = registerBeehive2('bee nest', 31, 3, Res({resin:400e33}), default_ethereal_growtime, Num(0.5), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_beenest);
 
 crop2_register_id = 250;
-var mistletoe2_0 = registerMistletoe2('mistletoe', 15, 0, Res({resin:10}), 1.5, Num(0.01), undefined, 'Must be planted next to ethereal tree to work. Gives multiple bonuses, which can be unlocked and upgraded over time.', images_mistletoe);
+var mistletoe2_0 = registerMistletoe2('mistletoe', 15, 0, Res({resin:10}), 1.5, Num(0.01), undefined, function() {
+  return 'Must be planted next to ethereal tree to work. Gives multiple bonuses, which can be unlocked and upgraded over time. Can have only max ' + getMaxNumEtherealMistletoes() + '.';
+}, images_mistletoe);
+
 
 // templates
 
@@ -5824,6 +5835,10 @@ var FRUIT_TREELEVEL = fruit_index++; // treelevel production bonus
 var FRUIT_SEED_OVERLOAD = fruit_index++; // increase seed production but also mushrooms's seed consumption
 var FRUIT_SPORES_OVERLOAD = fruit_index++; // increase spore production but at the cost of even more seed consumption. This ability is introduced for emerald fruits, the first fruit with 6 slots. This ability is only useable if seeds boost is also slotted in the fruit, without it the mushroom for sure won't get enough seeds. It's also not useable to have this ability and the regular FRUIT_MUSHBOOST at the same time, there won't be enough seed production to support both multiplier at the same time. Instead, it's like this: if there are enough seeds, FRUIT_SPORES_OVERLOAD is best. If there are not enough seeds, then instead FRUIT_MUSHBOOST is better because the seeds are cheaper now, even though FRUIT_MUSHBOOST can't reach an as high spores amount as FRUIT_SPORES_OVERLOAD.
 var FRUIT_RESIN_TWIGS = fruit_index++; // works like FRUIT_RESINBOOST and FRUIT_TWIGSBOOST at the same time
+// diamond tier
+var FRUIT_GROW_ENHANCE = fruit_index++; // increases grow speed. In addition, enhances all other abilities by +50%. Good to enhance unique abilities like grow speed, nuts or resin/twigs, but bad for focussing purely on seeds or spores which have many other abilities that are better than this
+
+// NOTE: only ONE spot left hier before index 20 used below is reached. This can't be increased without altering the savegame format
 
 // These seasonal abilities only exist for the appropriate seasonal fruit and do not take up a regular slot
 fruit_index = 20; // leave a few available spots for non-seasonal abilities above
@@ -5846,8 +5861,16 @@ var FRUIT_INFERNAL = fruit_index++; // mandrake fruit
 
 // returns the amount of boost (add 1 to get multiplier) of the ability, when relevant, for a given ability level in the fruit and the fruit tier
 // opt_basic: if true, adjusts some abilities if basic challenge active. Doesn't adjust ability or level, as the getFruitTier and getFruitAbility already take an opt_basic parameter for that
-// opt_sub_part: optional sub-part, for some abilities that have multiple independent effects, e.g. FRUIT_RESINBOOST and FRUIT_TWIGSBOOST. Can also be used for FRUIT_TREELEVEL to get the target level instead of depending on current treelevel
-function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
+// opt_sub_part: optional sub-part, for some abilities that have multiple independent effects, e.g. FRUIT_RESINBOOST, FRUIT_TWIGSBOOST and FRUIT_GROW_ENHANCE. Can also be used for FRUIT_TREELEVEL to get the target level instead of depending on current treelevel
+function getFruitBoost(opt_f, ability, level, tier, opt_basic, opt_sub_part) {
+  if(opt_f && ability != FRUIT_GROW_ENHANCE) { // FRUIT_GROW_ENHANCE does not enhance itself, also not its own grow boost
+    var enhance = getFruitAbilityFor(opt_f, FRUIT_GROW_ENHANCE, true);
+    if(enhance) {
+      var e = getFruitBoost(undefined, FRUIT_GROW_ENHANCE, enhance, tier, opt_basic).addr(1);
+      return getFruitBoost(undefined, ability, level, tier, opt_basic, opt_sub_part).mul(e);
+    }
+  }
+
   var base = Math.pow(getFruitTierStrength(tier), 0.75) * 0.05;
 
   if(ability == FRUIT_BERRYBOOST) {
@@ -6013,10 +6036,17 @@ function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
   if(ability == FRUIT_SPORES_OVERLOAD) {
     return Num(base * 2.5 * level).powr(1.1).mulr(2.5); // same as FRUIT_MUSHBOOST but a much higher multiplier, but this is only reachable if more than enough seeds are available
   }
+  if(ability == FRUIT_GROW_ENHANCE) {
+    // similar to FRUIT_GROWTH_SPEED
+    var amount = towards1(level, 5);
+    var max = 0.2 * (1 + 3 * tier / 12);
+    return Num(max * amount);
+  }
 
   return Num(0.1);
 }
 
+// for FRUIT_MIX
 var mix_mul_nettle = 1.0;
 var mix_pow_nettle = 0.3;
 var mix_mul_brassica = 1.25;
@@ -6050,6 +6080,7 @@ function getFruitAbilityCost(ability, level, tier) {
   var nonlinearability = false;
   if(ability == FRUIT_MUSHEFF) nonlinearability = true;
   if(ability == FRUIT_GROWSPEED) nonlinearability = true;
+  if(ability == FRUIT_GROW_ENHANCE) nonlinearability = true;
   if(ability == FRUIT_RESINBOOST) nonlinearability = true;
   if(ability == FRUIT_TWIGSBOOST) nonlinearability = true;
   if(ability == FRUIT_RESIN_TWIGS) nonlinearability = true;
@@ -6111,10 +6142,9 @@ function getFruitTierStrength(tier) {
     case 8: return 4000;
     case 9: return 10000; // a smaller growth than in getFruitTierCost, because this fruit already adds an extra slot which is already a very strong thing on its own
     case 10: return 40000;
-    // TODO: these numbers must be tuned once those fruits are introduced
-    case 11: return 100000;
+    case 11: return 125000;
   }
-  return tier < 0 ? 0 : 100000;
+  return tier < 0 ? 0 : 125000;
 }
 
 // if due to a game update the costs of certain abilities of fruits changes, this recomputes the correct amount of essence spent
@@ -6396,8 +6426,38 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
     return 10;
   }
 
+  // level 220: diamond introduced
+  if(treelevel >= 220 && treelevel < 225) {
+    return (roll > prob75) ? 11 : 10;
+  }
+
+  // level 225
+  if(treelevel >= 225 && treelevel < 230) {
+    return (roll > prob50) ? 11 : 10;
+  }
+
+  // level 230
+  if(treelevel >= 230 && treelevel < 235) {
+    return (roll > prob25) ? 11 : 10;
+  }
+
+  // level 235
+  if(treelevel >= 235 && treelevel < 240) {
+    return (roll > prob20) ? 11 : 10;
+  }
+
+  // level 240
+  if(treelevel >= 240 && treelevel < 245) {
+    return (roll > prob10) ? 11 : 10;
+  }
+
+  // level 245
+  if(treelevel >= 245 && treelevel < 250) {
+    return 11;
+  }
+
   // Higher tree levels are not yet implemented for the fruits
-  return 10;
+  return 11;
 }
 
 // how many abilities should a fruit of this tier have (excluding any seasonal ability)
@@ -6874,7 +6934,7 @@ function getTreeBoostFor(treelevel, upgrade2level, only_for_ethereal_upgrade_dis
     // fruit ability
     var level = getFruitAbility(FRUIT_TREELEVEL, true);
     if(level > 0) {
-      var mul = getFruitBoost(FRUIT_TREELEVEL, level, getFruitTier(true)).addr(1);
+      var mul = getFruitBoost(getActiveFruit(), FRUIT_TREELEVEL, level, getFruitTier(true)).addr(1);
       result.mulInPlace(mul);
     }
   }
@@ -6920,7 +6980,7 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, opt_target) 
     next_fruit_drop_level = fruit_drop_level + 30;
   }
   // the tree level boost uses the bee boost's value as basis
-  var boost = getFruitBoost(FRUIT_BEEBOOST, ability_level, fruit_tier);
+  var boost = getFruitBoost(getActiveFruit(), FRUIT_BEEBOOST, ability_level, fruit_tier);
   // For amethyst fruits: relevant tree levels where multiplier applies are from 115-135 and that's where the boost value is computed
   // to be in similar range as that for fruit berry boost etc... at input level 135, but it is soft capped after that
   // TODO: also support lower fruit tier, for e.g. basic challenge
@@ -7464,12 +7524,12 @@ function getUnusedResinBonusFor(resin) {
   var level;
   level = getFruitAbility(FRUIT_RESINBOOST, true);
   if(level > 0) {
-    var mul = getFruitBoost(FRUIT_RESINBOOST, level, getFruitTier(true), false, 1).addr(1);
+    var mul = getFruitBoost(getActiveFruit(), FRUIT_RESINBOOST, level, getFruitTier(true), false, 1).addr(1);
     result = result.mul(mul);
   }
   level = getFruitAbility(FRUIT_RESIN_TWIGS, true);
   if(level > 0) {
-    var mul = getFruitBoost(FRUIT_RESIN_TWIGS, level, getFruitTier(true), false, 1).addr(1);
+    var mul = getFruitBoost(getActiveFruit(), FRUIT_RESIN_TWIGS, level, getFruitTier(true), false, 1).addr(1);
     result = result.mul(mul);
   }
 
@@ -7492,12 +7552,12 @@ function getUnusedTwigsBonusFor(twigs) {
   var level;
   level = getFruitAbility(FRUIT_TWIGSBOOST, true);
   if(level > 0) {
-    var mul = getFruitBoost(FRUIT_TWIGSBOOST, level, getFruitTier(true), false, 1).addr(1);
+    var mul = getFruitBoost(getActiveFruit(), FRUIT_TWIGSBOOST, level, getFruitTier(true), false, 1).addr(1);
     result = result.mul(mul);
   }
   level = getFruitAbility(FRUIT_RESIN_TWIGS, true);
   if(level > 0) {
-    var mul = getFruitBoost(FRUIT_RESIN_TWIGS, level, getFruitTier(true), false, 1).addr(1);
+    var mul = getFruitBoost(getActiveFruit(), FRUIT_RESIN_TWIGS, level, getFruitTier(true), false, 1).addr(1);
     result = result.mul(mul);
   }
 
@@ -7568,7 +7628,7 @@ function getSpringFlowerBonus() {
   var level = a[0];
   var ability = a[1];
   if(level > 0) {
-    var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier(true), true));
+    var mul = Num(1).add(getFruitBoost(getActiveFruit(), ability, level, getFruitTier(true), true));
     bonus.mulInPlace(mul);
   }
 
@@ -7591,7 +7651,7 @@ function getSummerBerryBonus() {
   var level = a[0];
   var ability = a[1];
   if(level > 0) {
-    var mul = getFruitBoost(ability, level, getFruitTier(true), true).addr(1);
+    var mul = getFruitBoost(getActiveFruit(), ability, level, getFruitTier(true), true).addr(1);
     bonus.mulInPlace(mul);
   }
 
@@ -7619,7 +7679,7 @@ function getAutumnMushroomBonus() {
   var level = a[0];
   var ability = a[1];
   if(level > 0) {
-    var mul = getFruitBoost(ability, level, getFruitTier(true), true).addr(1);
+    var mul = getFruitBoost(getActiveFruit(), ability, level, getFruitTier(true), true).addr(1);
     bonus.mulInPlace(mul);
   }
 
@@ -7672,7 +7732,7 @@ function getWinterTreeWarmth() {
   var level = a[0];
   var ability = a[1];
   if(level > 0) {
-    var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier(true), true));
+    var mul = Num(1).add(getFruitBoost(getActiveFruit(), ability, level, getFruitTier(true), true));
     bonus.mulInPlace(mul);
   }
 
@@ -9885,7 +9945,7 @@ var nut3_10 = registerNut3('ruby acorn', 10, Res({infseeds:500e66}), Res({infsee
 var nut3_11 = registerNut3('diamond acorn', 11, Res({infseeds:50e78}), Res({infseeds:1e42}), Num(5000), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 2700;
-var lotus_to_mushroom_boost = new Num(1.25); // it uses a separate lower boost to mushrooms
+var lotus_to_mushroom_boost = new Num(1.5); // it uses a separate lower boost to mushrooms
 var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(277.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));
 var lotus3_10 = registerLotus3('ruby lotus', 10, Res({infseeds:20e69}), Num(7.77777), Num(1000), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader10, [4, 10], [0.9, 1.02]));
 var lotus3_11 = registerLotus3('diamond lotus', 11, Res({infseeds:2.5e81}), Num(7.77777), Num(7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
