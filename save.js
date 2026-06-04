@@ -2101,6 +2101,11 @@ function decState(s) {
           else f.abilities[i] += 11;
         }
       }
+      // fix accidental 'unknown' or 'none' extra ability that appeared in diamond fruits
+      if(save_version == 262144*2+64*18+3 && f.tier == 11) {
+        if(f.type == 0 && f.abilities.length > 6) f.abilities.length = 6;
+        if(f.type != 0 && f.abilities.length > 7) { f.abilities[6] = f.abilities[7]; f.abilities.length = 7; }
+      }
       return f;
     };
     if(save_version < 4096*1+57) {

@@ -613,7 +613,7 @@ function getFruitAbilityDetailsText(f, a, level) {
     if(enhance && a != FRUIT_GROW_ENHANCE) {
       text += '<br>';
       var percent3 = getFruitBoost(f, a, level, f.tier).toPercentString();
-      text += 'With ehnance: ' + percent3;
+      text += 'With enhance: ' + percent3;
     }
 
     text += '<br>';

@@ -6468,7 +6468,7 @@ function getNumFruitAbilities(tier) {
   if(tier >= 5) num_abilities = 4;
   if(tier >= 7) num_abilities = 5;
   if(tier >= 9) num_abilities = 6;
-  if(tier >= 11) num_abilities = 7;
+  //if(tier >= 12) num_abilities = 7;
   return num_abilities;
 }
 
