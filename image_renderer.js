@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -955,11 +955,12 @@ function createCanvas(x, y, w, h, opt_parent) {
   return renderer.createCanvas(x, y, w, h, opt_parent);
 }
 
+//  Extends an image object created by generateImage, with possibly extra data needed for the renderer
 function setupImage(image) {
   return renderer.setupImage(image);
 }
 
-// like generateImage, but also calls setupImage on it
+// like generateImage, but also calls setupImage on it. generateImage creates an image object from textual representation, setupImage possibly adds extra data to the image object needed for the renderer
 function generateAndSetupImage(text) {
   return setupImage(generateImage(text));
 }

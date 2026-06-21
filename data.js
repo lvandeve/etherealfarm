@@ -1213,7 +1213,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.squirrel_upgrades[upgradesq_highest_level].count && state.g_treelevel > upgradesq_highest_level_min) {
       var mul = GetSquirrelUpgradeHighestTreeLevelMultiplier();
       result.mulInPlace(mul);
-      if(breakdown) breakdown.push(['highest tree level ever ' + state.g_treelevel + ' (squirrel upgrade)', true, mul, result.clone()]);
+      if(breakdown) breakdown.push(['max tree level ever ' + state.g_treelevel + ' (squirrel upgrade)', true, mul, result.clone()]);
     }
 
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.squirrel_upgrades[upgradesq_leveltime].count) {
@@ -5449,8 +5449,8 @@ var upgrade2_highest_level_bonus2 = Num(0.001);
 var upgrade2_highest_level = registerUpgrade2('tree\'s gesture', LEVEL2, Res({resin:2e6}), 5, function() {
       // nothing to do, upgrade count causes the effect elsewhere
     }, function(){return true;}, 95, function() {
-      return 'Highest tree level ever bonus: gain ' + upgrade2_highest_level_bonus.toPercentString() +
-             ' bonus to seeds, spores, resin and twigs income per highest tree level ever reached (multiplicative). For each next upgrade, gain an additional ' +
+      return 'Max tree level ever bonus: gain ' + upgrade2_highest_level_bonus.toPercentString() +
+             ' bonus to seeds, spores, resin and twigs income per max tree level ever reached (multiplicative). For each next upgrade, gain an additional ' +
              upgrade2_highest_level_bonus2.toPercentString() + ' per upgrade level (additive). Full formula: bonus multiplier = (' +
              upgrade2_highest_level_bonus.addr(1).toString(5) + ' + ' + upgrade2_highest_level_bonus2.toString(5) + ' * (upgrade_levels - 1)) ^ max_tree_level_ever'
              + '<br><br>'
@@ -8355,9 +8355,9 @@ var upgradesq_highest_level_param1 = 0.1;
 var upgradesq_highest_level_param2 = 1.1;
 var upgradesq_highest_level_min =  75; // min tree level where upgradesq_highest_level begins to work
 var upgradesq_highest_level_formula_text = '((highest level - ' + upgradesq_highest_level_min + ') * ' + upgradesq_highest_level_param1 + ' + 1) ^ ' + upgradesq_highest_level_param2;
-var upgradesq_highest_level = registerSquirrelUpgrade('highest tree level ever bonus', undefined,
+var upgradesq_highest_level = registerSquirrelUpgrade('max tree level ever bonus', undefined,
   function() {
-    return 'unlocks a production bonus that depends on highest tree level ever reached, starting from level ' +
+    return 'unlocks a production bonus that depends on max tree level ever reached, starting from level ' +
             upgradesq_highest_level_min + '. Bonus multiplier formula: ' + upgradesq_highest_level_formula_text +
             '<br>Current bonus: +' + GetSquirrelUpgradeHighestTreeLevelMultiplier().subr(1).toPercentString() +
             '<br>At next highest tree level (' + (state.g_treelevel + 1) + '): +' + GetSquirrelUpgradeHighestTreeLevelMultiplier(1).subr(1).toPercentString();

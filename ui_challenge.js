@@ -639,8 +639,10 @@ function getChallengeFormulaString(which, c, c2) {
     if(which == 0) {
       result = 'multiplicative +' + c.bonus.toPercentString() + ' bonus for each harder completion, plus partial bonus up to '  + (c.bonus.divr(2)).toPercentString() + ' for incomplete run';
     } else if(which == 1) {
-      result = '(1 + ' + c.bonus.toPercentString() + ') ^ num_completions'; // this is same as the which==0 string but shorter to fit in the ln formula below
-      result = '50% * ln(' + result + '), plus partial bonus for incomplete run';
+      //result = '(1 + ' + c.bonus.toPercentString() + ') ^ num_completions'; // this is same as the which==0 string but shorter to fit in the ln formula below
+      //result = '50% * ln(' + result + '), plus partial bonus for incomplete run';
+      var v = Num.log(c.bonus.addr(1)).mulr(0.5);
+      result = v.toPercentString() + ' * num_completions, plus partial bonus for incomplete run';
     }
   }
   return result;

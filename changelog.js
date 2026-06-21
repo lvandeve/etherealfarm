@@ -30,6 +30,12 @@ function getChangeLog() {
     }
   }
 
+  text += '0.18.3c (2026-06-21)';
+  text += '<br/>• Improved visual difference between platinum and diamond infinity crops.';
+  text += '<br/>• Tooltip for fruits with \'enhance\' now also shows the enhanced value.';
+  text += '<br/>• Bug- and typo fixes.'; // includes showing wrong grayed out button for some fruit skill costs, and displaying a challenge bonus formula that used ln and powers that could be just a multiplication better
+  text += '<br/><br/>';
+
   text += '0.18.3 (2026-06-04)';
   text += '<br/>• Added diamond fruit tier, starting at level 220.';
   text += '<br/>• In the infinity field, increased the lotus to mushroom boost from +125% to +150%.'; // because sometimes the lotus boost was barely worth it, and putting a third type of crop next to mushroom should have some decent effect

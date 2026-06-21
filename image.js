@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -751,6 +751,7 @@ function metalify_nonlincolor(v) {
   return v;
 }
 
+// im = image object
 // metalheader = metalheader0 for zinc, etc... They use the colors N,M,m,n (hue range hm) for the metal colors
 // opt_effect, opt_effect2, opt_effect3: operation done to make things more distinguishable if needed. Second can be given to apply two of the effects.
 // *) 0/undefined: no effect
@@ -768,6 +769,7 @@ function metalify_nonlincolor(v) {
 // *) 12: increase saturation additively
 // *) 13: translucent except outline
 // opt_params: parameters used by some of the effects, given in same order. If not set default value 1 is used, values higher than 1 strenghten the effect, lower values reduce it (0 results in no effect)
+// returns an edited image object. It still needs to be setup for the renderer
 function metalify(im, metalheader, opt_effects, opt_params) {
   var pal = generatePalette(metalheader);
   var m = [];

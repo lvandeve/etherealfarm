@@ -138,7 +138,7 @@ Cell.prototype.getMainMultiPiece = function() {
 };
 
 // function to check if two neighbors are legitimately diagonlly connected, geometrically speaking. In case of 2x2 crops or tree, something isn't diagonally connected if it's already orthogonally connected to it, to avoid double counting.
-// does NOT take into account upgrades (such as the diagonal ethreal tree squirrel upgrade or diagonal brassica), only the geometry (this is especially related to pumpkin), so upgrades must be checked at the call site
+// does NOT take into account upgrades (such as the diagonal ethereal tree squirrel upgrade or diagonal brassica), only the geometry (this is especially related to pumpkin), so upgrades must be checked at the call site
 // this is for the main field, not the ethereal field
 // field parameter: state.field for basic field, state.field2 for ethereal field
 function diagConnected(x0, y0, x1, y1, field) {

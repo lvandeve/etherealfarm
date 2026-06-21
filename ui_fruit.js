@@ -611,9 +611,9 @@ function getFruitAbilityDetailsText(f, a, level) {
 
     var enhance = getFruitAbilityFor(f, FRUIT_GROW_ENHANCE, true);
     if(enhance && a != FRUIT_GROW_ENHANCE) {
-      text += '<br>';
+      //text += '<br>';
       var percent3 = getFruitBoost(f, a, level, f.tier).toPercentString();
-      text += 'With enhance: ' + percent3;
+      text += ' (with enhance: ' + percent3 + ')';
     }
 
     text += '<br>';
@@ -874,6 +874,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     y += h;
 
     if(!isInherentAbility(a)) {
+      var cost = getFruitAbilityCost(f.abilities[selected], f.levels[selected], f.tier);
       levelButton.textEl.innerText = 'Buy 1';
       var available = state.res.essence.sub(f.essence);
       if(available.lt(cost.essence)) {
@@ -1043,7 +1044,7 @@ function showStorageFruitSourceDialog() {
 
 function styleFruitChip(flex, f) {
   var ratio = state.res.essence
-  flex.div.style.backgroundColor = tierColors_BG[f.tier] + '6';
+  flex.div.style.backgroundColor = tierColors_BG[f.tier] + '7';
   // see also array fruitmarkcolornames
   if(f.mark) {
     var color = fruitmarkcolors[f.mark] || '#fff';
@@ -1090,6 +1091,8 @@ function getFruitTooltipText(f, opt_label) {
 
   text += 'Tier ' + toRomanUpTo(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
 
+  var enhance = getFruitAbilityFor(f, FRUIT_GROW_ENHANCE, true);
+
   text += '<br>';
   for(var i = 0; i < f.abilities.length; i++) {
     var a = f.abilities[i];
@@ -1100,7 +1103,12 @@ function getFruitTooltipText(f, opt_label) {
     } else if(a == FRUIT_NONE) {
       text += 'Ability: ' + upper(f.abilityToString(i));
     } else {
-      text += 'Ability: ' + upper(f.abilityToString(i)) + ' (' + getFruitBoost(undefined, a, level, f.tier).toPercentString() + ')';
+      var percent = getFruitBoost(undefined, a, level, f.tier).toPercentString();
+      if(enhance && a != FRUIT_GROW_ENHANCE) {
+        percent += ' 🡒 ' + getFruitBoost(f, a, level, f.tier).toPercentString();
+      }
+
+      text += 'Ability: ' + upper(f.abilityToString(i)) + ' (' + percent + ')';
     }
   }
   text += '<br>';

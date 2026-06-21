@@ -292,7 +292,11 @@ function makeEtherealMistletoeDialog(x, y) {
   if(getEtherealMistletoeEvolutionLevel() > 0) {
     text2 += 'Evolution level: ' + (getEtherealMistletoeEvolutionLevel()) + '<br/>';
   }
-  text2 += 'Can have only max ' + getMaxNumEtherealMistletoes() + ' of this crop, and it must be planted next to the ethreal tree to work.<br/>';
+  if(etherealMistletoeCanGoAnywhere()) {
+    text2 += 'Can have only max ' + getMaxNumEtherealMistletoes() + ' of this crop. Thanks to the wayfaring mistletoe upgrade, it can be planted anywhere and doesn\'t have to be next to the ethereal tree to work.<br/>';
+  } else {
+    text2 += 'Can have only max ' + getMaxNumEtherealMistletoes() + ' of this crop, and it must be planted next to the ethereal tree to work.<br/>';
+  }
 
   textel2.div.innerHTML = text2;
 
