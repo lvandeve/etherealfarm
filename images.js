@@ -1446,7 +1446,7 @@ generateAndSetupImage(metalheader7 + image_starfruit),
 generateAndSetupImage(metalheader8 + image_starfruit),
 generateAndSetupImage(metalheader9 + image_starfruit),
 generateAndSetupImage(metalheader10 + image_starfruit),
-setupImage(metalifyDiamondFruit(generateImage(image_pear))),
+setupImage(metalifyDiamondFruit(generateImage(image_starfruit))),
 ];
 var images_dragonfruit = [
 generateAndSetupImage(metalheader0 + image_dragonfruit),
