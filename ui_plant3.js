@@ -199,7 +199,7 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
       if(c.tier == -1) {
         result += ' (tier: translucent)';
       } else if(c.tier > 0 || (state.infinity_ascend && c.tier >= 0)) {
-        result += ' (tier ' + (c.tier + 1) + ')';
+        result += ' (tier ' + (c.tier + TIER0) + ')';
       }
       result += '<br>';
 

@@ -193,7 +193,7 @@ var getUpgradeInfoText = function(u, completed, opt_detailed) {
         if(c.getPlantTime() != c.planttime) infoText += ' (base: ' + util.formatDuration(c.planttime) + ')';
       }
       infoText += '<br>';
-      infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
+      infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + TIER0) + ')') : '') + '<br>';
       if(c2.prestige) infoText += 'Prestiged: ' + c2.prestige + 'x<br>';
     }
 

@@ -1807,7 +1807,7 @@ function computeDerived(state) {
     var u2 = state.upgrades[registered_upgrades[i]];
     if(u2.unlocked) {
       state.upgrades_unlocked++;
-      if(u2.seen && !u2.had && (u.iscropunlock || u.isprestige) && u.cost.le(state.res)) {
+      if(u2.seen && !u2.had && !u2.count && (u.iscropunlock || u.isprestige) && u.cost.le(state.res)) {
         state.neverhadupgradeunlocked = true;
       }
       if(!u2.seen && !u2.count) {

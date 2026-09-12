@@ -26,7 +26,7 @@ var field2Rows;
 function getCropInfoHTML2(f, c, opt_detailed) {
   var result = 'Ethereal ' + c.name;
   result += '<br/>';
-  result += 'Crop type: ' + getCropTypeName(c.type) + ((c.tier && c.isReal()) ? (' (tier ' + (c.tier + 1) + ')') : '');
+  result += 'Crop type: ' + getCropTypeName(c.type) + ((c.tier && c.isReal()) ? (' (tier ' + (c.tier + TIER0) + ')') : '');
   result += '<br/>';
 
   if(c.istemplate) {

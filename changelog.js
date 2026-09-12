@@ -30,6 +30,14 @@ function getChangeLog() {
     }
   }
 
+  text += '0.18.3e Bugfixes (2026-09-12)';
+  text += '<br/>• More consistent naming: made all tier numbers of crops, medals, fruits, ... 1-indexing based. This is a display-change only. Before, there was inconsistency with some names being 0-index based and others 1-index based.';
+  text += '<br/>• Fixed display bug with "highest production ever this ascend" for ascended infinity field.';
+  text += '<br/>• Now showing (!) in the challenge dialog for challenges that still have a next reward available, and amount done for igniferous challenge.';
+  text += '<br/>• Possibly fixed a text-blinking bug in eel and tang details dialog.'; // Due to using exact floating point comparison for time-weighted message
+  text += '<br/>• Various other bugfixes.'; // e.g. improved error messaging when trying to upgrade a fish of which you can only have 1 and also not afford it at the same time. showing different "fishes unlocked" help dialog in ascended infinities.
+  text += '<br/><br/>';
+
   text += '0.18.3c (2026-06-21)';
   text += '<br/>• Improved visual difference between platinum and diamond infinity crops.';
   text += '<br/>• Tooltip for fruits with \'enhance\' now also shows the enhanced value.';

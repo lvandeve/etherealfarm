@@ -1999,6 +1999,13 @@ function decState(s) {
     state.infinity_ascend = processUint();
     state.infinity_res = processRes();
     if(save_version >= 262144*2+64*18+1) state.infinity_max_prod = processRes();
+
+    if(save_version <= 262144*2+64*18+3) {
+      // fix the fact that state.infinity_max_prod never actually got reset when infinity-ascending and so was tracking max infinity resources ever intead of this run. This guesses when the issue happens, when you don't yet have the last tier of brassica unlocked you certainly don't have had that high income yet this ascend
+      if(state.infinity_ascend > 0 && !state.crops3[brassica3_11].unlocked && state.infinity_max_prod.infseeds.eq(state.g_max_prod.infseeds) && state.infinity_max_prod.infspores.eq(state.g_max_prod.infspores)) {
+        state.infinity_max_prod = new Res();
+      }
+    }
   } else {
     state.infinity_res = new Res();
     state.infinity_res.infseeds = state.g_res.infseeds.clone();

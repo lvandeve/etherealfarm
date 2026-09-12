@@ -30,7 +30,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   if(c.tier == -1) {
     result += ' (tier: translucent)';
   } else if(c.tier > 0 || (state.infinity_ascend && c.tier >= 0)) {
-    result += ' (tier ' + (c.tier + 1) + ')';
+    result += ' (tier ' + (c.tier + TIER0) + ')';
   }
 
   var help = getCropTypeHelp3(c.type, state);

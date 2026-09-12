@@ -642,6 +642,17 @@ registerHelpDialog(45, 'Auto transcend & Seasons', 'You unlocked auto-transcend!
     undefined,
     undefined);
 
+registerHelpDialog(46, 'Infinity pond fishes again', 'You unlocked non-translucent fishes in the infinity pond again!',
+    `You unlocked non-translucent fishes in the infinity pond!
+    <br><br>
+    While translucent fishes were available early in the ascended infinity, now you also unlocked the non-translucent ones again.
+    `,
+    image_goldfish0,
+    undefined,
+  [[images_pond[0],images_pond[1],images_pond[0]],
+   [images_pond[1],images_pond[2],blendImages(images_pond[3], image_goldfish0)],
+   [blendImages(images_pond[3], image_koi0),images_pond[1],images_pond[0]]]);
+
 
 function createKeyboardHelpDialog() {
   var dialog = createDialog({scrollable:true, title:'Shortcuts'});

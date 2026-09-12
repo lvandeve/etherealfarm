@@ -21,6 +21,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var seasonNames = ['spring', 'summer', 'autumn', 'winter',
                    'ethereal', 'infernal', 'infinity'];
 
+// whether 0-based indexing or 1-based indexing is used for tier names of crops (e.g. whether blackberry is tier 0 or 1) and for the metals of medals etc... (e.g. whether zinc is 0 or 1). These two are linked together because the infinity crops use the metals of medals as their tiers.
+// This is a display change only, and only changes tier numbers in some tooltips and descriptions (and does not change any metal names or colors of things, zinc stays zinc)
+var TIER0 = 1;
+
 var croptype_index = 0;
 var CROPTYPE_BERRY = croptype_index++;
 var CROPTYPE_MUSH = croptype_index++;
@@ -7141,7 +7145,7 @@ function treeLevelResin(level, breakdown) {
       var umul = getFishMultiplier(FISHTYPE_TANG, state, 0);
       resin.mulInPlace(mul);
       // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
-      if(breakdown) breakdown.push([umul.eq(mul) ? 'tang (fish)' : 'tang fish (time-weighted)', true, mul, resin.clone()]);
+      if(breakdown) breakdown.push([umul.near(mul, 0.01) ? 'tang (fish)' : 'tang fish (time-weighted)', true, mul, resin.clone()]);
     }
   }
 
@@ -7192,7 +7196,8 @@ var timeweightedinfo = '(the bonus is decreased if the fish is only present for 
 // if 0, computes the formula according to the fish currently there. Use this to compute what the actual underlying value is, which is the basis for the time-weighted computations
 // if 1, takes into account time length during which the fishes were there. Use this when computing time-weighted value (weighted average in last MAXINFTOBASICDELAY time) to update state (but not for the actual gameplay)
 // if 2, similar to 1 but also takes reduced penalty with time shift into account, so it's like the weighed average but sometimes improved
-// if 3, returns the minimum of the computation for timeweighted==0 and timeweighted==1, for actual current gameplay computation
+// if 3, returns the minimum of the computation for timeweighted==0 and timeweighted==2, for actual current gameplay computation
+// For some info on the time-weighting mechanism, see the patch notes of 2024-01-27 and 2024-06-03. To reproduce the time-weighting of e.g. eel, have no eel at start of a run, ensure to have a fish that boosts a infseeds giving crop, ensure the run is ongoing for more than a few minutes already, then replace the infseeds-boosting fish with a tang, then the time-weighting for tang to resin should be visible.
 function getFishMultiplier(fishtype, state, timeweighted) { // aka getFishBonus
   if(timeweighted == 3) {
     return Num.min(getFishMultiplier(fishtype, state, 0), getFishMultiplier(fishtype, state, 2));
@@ -7419,7 +7424,7 @@ function treeLevelTwigs(level, breakdown) {
       var umul = getFishMultiplier(FISHTYPE_EEL, state, 0);
       res.twigs.mulInPlace(mul);
       // if it says "time weighted", it means the amount of eel in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during twigs gain)
-      if(breakdown) breakdown.push([umul.eq(mul) ? 'eel' : 'eel (time-weighted)', true, mul, res.clone()]);
+      if(breakdown) breakdown.push([umul.near(mul, 0.01) ? 'eel' : 'eel (time-weighted)', true, mul, res.clone()]);
     }
   }
 
@@ -11602,7 +11607,6 @@ function ascendInfinity() {
   if(!state.infinity_ascend) state.infinityascendtime = state.time;
   state.infinityascendtime2 = state.time;
   state.infinity_ascend += 1;
-  state.infinity_res = new Res();
 
   state.numw3++;
   state.numh3++;
@@ -11626,6 +11630,8 @@ function ascendInfinity() {
     c.unlocked = false;
   }
 
+  state.infinity_res = new Res();
+  state.infinity_max_prod = new Res();
   state.g_max_infinityboost = new Num(0);
 
   state.res.infseeds = new Num(0);

@@ -254,6 +254,8 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   var c2 = state.challenges[challenge_id];
 
   var currentlyrunning = (state.challenge == c.index);
+  var isnew = c2.num == 0 && c2.maxlevel == 0 && state.challenge != c.index;
+  var isnotfull = !c.fullyCompleted(true);
 
   var text = '';
 
@@ -332,7 +334,7 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   var completedtext;
   if(c.bonus_formula == 3) {
     if(c2.num_completed == 0) completedtext = 'no';
-    else if(c2.num_completed == 1) ' 1 time';
+    else if(c2.num_completed == 1) completedtext = ' 1 time';
     else completedtext = c2.num_completed + ' times';
   } else if(c.numStages() == 1 || !c.numStagesCompletedAtCurrentDifficulty(include_current_run)) {
     completedtext = (c.numStagesCompletedAtCurrentDifficulty(include_current_run) ? 'yes' : 'no');
@@ -343,6 +345,7 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   }
 
   text += '• Completed: ' + completedtext + '<br>';
+  if(!isnew && isnotfull && c.targetlevel != undefined && c.targetlevel.length > 0 && c.bonus_formula != 3) text += '• (!) A next reward is available<br>';
 
   if(c2.num) {
     if(c.index == state.challenge) {
@@ -418,7 +421,7 @@ function createChallengeDialog(opt_from_challenge) {
     if(!c2.unlocked) continue;
     //var isnew = !c.numStagesCompletedAtCurrentDifficulty(true);
     var isnew = c2.num == 0 && c2.maxlevel == 0 && state.challenge != c.index;
-    var isnotfull = !c.fullyCompleted(true)
+    var isnotfull = !c.fullyCompleted(true);
     var button = new Flex(buttonFlex, 0.2, pos, 0.8, pos + h);
     pos += h * 1.05;
     styleButton(button.div);
@@ -427,10 +430,12 @@ function createChallengeDialog(opt_from_challenge) {
     if(isnew) {
       //if(c2.num) text += ' (Open)'; else
       text += ' (New!)';
-    }
-    // The '/' means: "new stage available with target level: " but that's too long for the button
-    else if(isnotfull && c.targetlevel != undefined && c.targetlevel.length > 0) text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
-    else if(c.cycling > 1) {
+    } else if(isnotfull && c.targetlevel != undefined && c.targetlevel.length > 0) {
+      // The '/' means: "new stage available with target level: " but that's too long for the button
+      text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
+      if(c.bonus_formula != 3) text += ' (!)'; // The (!) means there is still a next reward (that isn't just more bonus from higher level; but e.g. an unlock) available from this challenge, similar in meaning to "New!", but for challenges that have multiple rewards and require one completion per reward
+      if(c.bonus_formula == 3) text += ' (' + c2.num_completed + ' done)';
+    } else if(c.cycling > 1) {
       if(!c.allCyclesCompleted(true)) {
         text += ' (New cycle!)';
       } else {

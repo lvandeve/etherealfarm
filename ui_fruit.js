@@ -649,7 +649,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   var text = upper(f.toString());
   var essence_available = state.res.essence.sub(f.essence);
   text += '<br>';
-  text += 'Tier ' + toRomanUpTo(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
+  text += 'Tier ' + toRomanUpTo(f.tier + TIER0) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
   text += '<br><br>';
   text += 'Fruit essence available: ' + essence_available.toString() + ' of ' + state.res.essence.toString() + ', ' + f.essence.toString() + ' used.';
   text += '<br>';
@@ -1087,9 +1087,9 @@ function getFruitTooltipText(f, opt_label) {
 
   text += '<br>';
   //text += 'type: ' + f.origName();
-  //text += ', tier ' + toRomanUpTo(f.tier);
+  //text += ', tier ' + toRomanUpTo(f.tier + TIER0);
 
-  text += 'Tier ' + toRomanUpTo(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
+  text += 'Tier ' + toRomanUpTo(f.tier + TIER0) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
 
   var enhance = getFruitAbilityFor(f, FRUIT_GROW_ENHANCE, true);
 

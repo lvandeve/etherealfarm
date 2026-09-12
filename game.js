@@ -2954,7 +2954,7 @@ function maybeUnlockFishes() {
   ////////
 
   var first_fish_unlocked2 = state.fishes[goldfish_0].unlocked;
-  if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog(43);
+  if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog((state.infinity_ascend == 0) ? 43 : 46);
 }
 
 function doNextAutoChoice() {

@@ -291,7 +291,7 @@ function makeUpgradeFishAction(x, y, single, opt_silent) {
   }
 
 
-  if(c3 && !too_expensive[1]) {
+  /*if(c3 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE_FISH, x:x, y:y, fish:c3, shiftPlanted:true});
     return true;
   } else {
@@ -305,23 +305,41 @@ function makeUpgradeFishAction(x, y, single, opt_silent) {
         showMessage('Fish not replaced, no higher tier unlocked or available', C_INVALID);
       }
     }
+  }*/
+  if(c3) {
+    addAction({type:ACTION_REPLACE_FISH, x:x, y:y, fish:c3, shiftPlanted:true});
+    return true;
+  } else {
+    if(!opt_silent) {
+      if(!(x >= 0 && x < state.pondw && y >= 0 && y < state.pondh) || state.pond[y][x].index < CROPINDEX) {
+        showMessage('No fish to upgrade tier here. Move mouse cursor over a fish and press u to upgrade it to the next tier', C_INVALID);
+      } else {
+        showMessage('Fish not replaced, no higher tier unlocked or available', C_INVALID);
+      }
+    }
   }
-  return true;
+  return false;
 }
 
 function makeDowngradeFishAction(x, y, opt_silent) {
   var too_expensive = [undefined];
   var c2 = getDowngradeFish(x, y, too_expensive);
 
-  if(c2 && !too_expensive[1]) {
+  /*if(c2 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE_FISH, x:x, y:y, fish:c2, shiftPlanted:true});
   } else if(c2 && too_expensive[1]) {
     // TODO: instead go to an even lower tier?
     showMessage('not enough resources for lower fish tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() + ', need ' + too_expensive[0].toString() + '. This can happen if you have a lot of the lower tier fish planted.', C_INVALID, 0, 0);
   } else if(!c2) {
     showMessage('Fish not replaced, no lower tier available', C_INVALID);
+  }*/
+  if(c2) {
+    addAction({type:ACTION_REPLACE_FISH, x:x, y:y, fish:c2, shiftPlanted:true});
+    return true;
+  } else {
+    showMessage('Fish not replaced, no lower tier available', C_INVALID);
   }
-  return true;
+  return false;
 }
 
 
@@ -390,7 +408,7 @@ function getFishInfoHTML(f, c, opt_detailed) {
   if(c.tier == -1) {
     result += ' (tier: translucent)';
   } else if(c.tier > 0 || (state.infinity_ascend && c.tier >= 0)) {
-    result += ' (tier ' + (c.tier + 1) + ')';
+    result += ' (tier ' + (c.tier + TIER0) + ')';
   }
 
   var upgrade_cost = [undefined];
@@ -430,9 +448,15 @@ function getFishInfoHTML(f, c, opt_detailed) {
   }
   result += '<br/>• Recoup on delete (d): ' + c.getRecoup().toString();
   if(upgrade_fish && upgrade_cost[0]) {
-    var tier_diff = upgrade_fish.tier - c.tier;
-    var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
-    result += '<br/> • Upgrade tier' + tier_diff_text + ' cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+    var limit_reason2 = [];
+    var canupgrade = canPlaceThisFishGivenCounts(upgrade_fish, undefined, limit_reason2, undefined);
+    if(canupgrade) {
+      var tier_diff = upgrade_fish.tier - c.tier;
+      var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
+      result += '<br/> • Upgrade tier' + tier_diff_text + ' cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+    } else {
+      result += '<br/> • Upgrade tier cost: N/A: ' + limit_reason2;
+    }
   }
 
   return result;
@@ -938,7 +962,7 @@ function makePlantFishDialog(x, y, opt_f, opt_replace, opt_recoup) {
       if(c.tier == -1) {
         result += ' (tier: translucent)';
       } else if(c.tier > 0 || (state.infinity_ascend && c.tier >= 0)) {
-        result += ' (tier ' + (c.tier + 1) + ')';
+        result += ' (tier ' + (c.tier + TIER0) + ')';
       }
       result += '<br>';
 

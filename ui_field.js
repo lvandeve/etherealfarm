@@ -143,9 +143,9 @@ function getCropInfoHTML(f, c, opt_detailed) {
 
   result += '<br/>';
   if(c2.prestige) {
-    result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ', prestige: ' + c2.prestige + 'x)') : '');
+    result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + TIER0) + ', prestige: ' + c2.prestige + 'x)') : '');
   } else {
-    result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
+    result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + TIER0) + ')') : '');
   }
   var help = td ? getTDCropTypeHelp(c.type, state) : getCropTypeHelp(c.type, state);
   if(help) {
