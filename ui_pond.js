@@ -204,7 +204,9 @@ function getUpgradeFish(x, y, single, opt_cost) {
       c2 = c3;
     }
 
-    if(cost.le(state.res)) {
+    var canupgrade = !state.fishcount[c3.index] || canPlaceThisFishGivenCounts(c3, undefined, undefined, undefined);
+
+    if(canupgrade && cost.le(state.res)) {
       // found a successful upgrade
       if(opt_cost != undefined) opt_cost[1] = false;
       break;
@@ -449,7 +451,7 @@ function getFishInfoHTML(f, c, opt_detailed) {
   result += '<br/>• Recoup on delete (d): ' + c.getRecoup().toString();
   if(upgrade_fish && upgrade_cost[0]) {
     var limit_reason2 = [];
-    var canupgrade = canPlaceThisFishGivenCounts(upgrade_fish, undefined, limit_reason2, undefined);
+    var canupgrade = !state.fishcount[upgrade_fish.index] || canPlaceThisFishGivenCounts(upgrade_fish, undefined, limit_reason2, undefined);
     if(canupgrade) {
       var tier_diff = upgrade_fish.tier - c.tier;
       var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
