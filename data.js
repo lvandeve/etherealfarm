@@ -4353,7 +4353,7 @@ challenges[challenge_towerdefense].helpdialogindex = 44;
 
 // 16
 var challenge_igniferous_tree_malus = 0.25;
-var challenge_igniferous_repetitions_malus = new Num(250);
+var challenge_igniferous_repetitions_malus = new Num(10);
 var challenge_igniferous = registerChallenge('igniferous challenge', /*targetlevel=*/[150], /*targetfun=*/undefined,
 /*targetdescription=*/'Reach level 150 to complete the challenge. ',
 /*targetdescription2=*/'After successfully completing it, the challenge will become much more difficult each time and have the same target level again.',
@@ -4989,9 +4989,10 @@ var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, defaul
 var lotus2_2 = registerLotus2('blue lotus', 8, 2, Res({resin:1e9}), 32, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_bluelotus);
 var lotus2_3 = registerLotus2('black lotus', 12, 3, Res({resin:200e12}), 256, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_blacklotus);
 var lotus2_4 = registerLotus2('gold lotus', 16, 4, Res({resin:500e15}), 2048, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_goldlotus);
-// following the above pattern, next boost here should be 4x higher, however given that watercress boost will also be added between this and previous lotus, having a factor of 8x is too strong, so reduced to 4x from now on (remember that lotus boost boosts multiple multipliers at once, at least 6 types with a chain of 5 types for spores, so this is n^5 scaling, not just linear)
+// following the above pattern, next boost here should be 8x higher than previuos isntead of 4x, however given that watercress boost will also be added between this and previous lotus, having a factor of 8x is too strong, so reduced to 4x from now on (remember that lotus boost boosts multiple multipliers at once, at least 6 types with a chain of 5 types for spores, so this is n^5 scaling, not just linear)
 var lotus2_5 = registerLotus2('green lotus', 20, 5, Res({resin:10e21}), 8192, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_greenlotus);
 var lotus2_6 = registerLotus2('red lotus', 24, 6, Res({resin:250e24}), 32768, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_redlotus);
+var lotus2_7 = registerLotus2('zinc lotus', 32, 7, Res({resin:200e36}), 131072, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', metalifyPlantImages(images_bluelotus, metalheader0, undefined, undefined, true));
 
 crop2_register_id = 200;
 // the first beehive has only 1% boost, however by the time you unlock this beehive you can get a massive boost from blue lotuses next to a beehive, one blue lotus next to a beehive turns this boost into 33%, and you can have more than 1 blue lotus next to it. For that reason it starts so low, because if this has a base boost of e.g. 25% this would be a way too huge jump in gameplay boost by just unlocking this new ethereal crop type at a time when you already have many lotuses
@@ -8507,7 +8508,7 @@ var upgradesq_mushroom_efficiency = registerSquirrelUpgrade('mushroom efficiency
 var upgradesq_nuts_value = 25; // multiplier
 var upgradesq_nuts = registerSquirrelUpgrade('nuts boost', undefined, '' + upgradesq_nuts_value + 'x boost to nuts production (multiplicatively)', image_nuts);
 
-var upgradesq_eth_all_boost = Num(0.25);
+var upgradesq_eth_all_boost = Num(0.3);
 var upgradesq_eth_all = registerSquirrelUpgrade('all ethereal crops boost', undefined, '+ ' + upgradesq_eth_all_boost.toPercentString() + ' boost to all ethereal crops that boost the basic field', image_medaltranscend);
 
 var upgradesq_squirrel_boost3 = Num(1.0);

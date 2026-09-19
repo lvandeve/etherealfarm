@@ -770,7 +770,7 @@ function metalify_nonlincolor(v) {
 // *) 13: translucent except outline
 // opt_params: parameters used by some of the effects, given in same order. If not set default value 1 is used, values higher than 1 strenghten the effect, lower values reduce it (0 results in no effect)
 // returns an edited image object. It still needs to be setup for the renderer
-function metalify(im, metalheader, opt_effects, opt_params) {
+function metalify(im, metalheader, opt_effects, opt_params, opt_keepgreen) {
   var pal = generatePalette(metalheader);
   var m = [];
   m[0] = pal['0']; // black
@@ -792,132 +792,138 @@ function metalify(im, metalheader, opt_effects, opt_params) {
       var g = c[1];
       var b = c[2];
       var a = c[3];
-      var l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      //var l = (0.33 * r + 0.33 * g + 0.33 * b) / 255;
-      l = metalify_nonlincolor(l);
-      var i = Math.min(m.length - 1, Math.floor(l * m.length));
-      var i2 = Math.min(m.length - 1, i + 1);
-      var f1 = l * m.length - i;
-      var f0 = 1 - f1;
-      r = m[i][0] * f0 + m[i2][0] * f1;
-      g = m[i][1] * f0 + m[i2][1] * f1;
-      b = m[i][2] * f0 + m[i2][2] * f1;
-      if(opt_effects) {
-        for(var i = 0; i < opt_effects.length; i++) {
-          var effect = opt_effects[i];
-          var param = (opt_params && opt_params[i] != undefined) ? opt_params[i] : 1; // if undefined a default is used below
+      var apply_effects = true;
+      if(opt_keepgreen && g > r * 1.2 && g > b * 1.2) apply_effects = false;
 
-          if(effect == 1) {
-            var amount = 1 / (1 + param); // 0.5 for default param=1
-            r *= amount;
-            g *= amount;
-            b *= amount;
-          }
-          if(effect == 2) {
-            var amount = 1 + param * 0.35;
-            r = Math.min(r * amount, 255);
-            g = Math.min(g * amount, 255);
-            b = Math.min(b * amount, 255);
-          }
-          if(effect == 3) {
-            var hsv = RGBtoHSV([r, g, b]);
-            var mul = 1 / (1 + param); // 0.5 for default param=1
-            hsv[1] *= mul;
-            var rgb = HSVtoRGB(hsv);
-            r = rgb[0];
-            g = rgb[1];
-            b = rgb[2];
-          }
-          if(effect == 4) {
-            var hsv = RGBtoHSV([r, g, b]);
-            var mul = param * 2;
-            hsv[1] = Math.min(hsv[1] * mul, 255);
-            var rgb = HSVtoRGB(hsv);
-            r = rgb[0];
-            g = rgb[1];
-            b = rgb[2];
-          }
-          if(effect == 5) {
-            //l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-            var d = 1 - (x + y) / (w + h - 2);
-            //d = Math.sin(d * 16) * 64;
-            d = (d - 0.5) * 255;
-            //d = Math.abs(d - 0.5) * 255;
-            //d *= 64;
-            //if((x + y) & 1) d *= 1.1;
-            r = Math.min(Math.max(0, r + d), 255);
-            g = Math.min(Math.max(0, g + d), 255);
-            b = Math.min(Math.max(0, b + d), 255);
-          }
-          if(effect == 6) {
-            r /= 255;
-            g /= 255;
-            b /= 255;
-            r = (r * r * r + 0.05) * param + (r * 1 - param);
-            g = (g * g * g + 0.05) * param + (g * 1 - param)
-            b = (b * b * b + 0.05) * param + (b * 1 - param)
-            r = Math.min(Math.max(0, r * 255), 255);
-            g = Math.min(Math.max(0, g * 255), 255);
-            b = Math.min(Math.max(0, b * 255), 255);
-          }
-          if(effect == 7) {
-            if(a == 255) {
-              var touching_transparent = false;
-              //if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
-              //if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
-              if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
-              if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
-              if(touching_transparent) {
-                r *= 0.85;
-                g *= 0.85;
-                b *= 0.85;
-              }
-            }
-          }
-          if(effect == 8) {
-            var hsv = RGBtoHSV([r, g, b]);
-            hsv[0] += Math.floor(param * 256);
-            if(hsv[0] > 255) hsv[0] -= 256;
-            var rgb = HSVtoRGB(hsv);
-            r = rgb[0];
-            g = rgb[1];
-            b = rgb[2];
-          }
-          if(effect == 9) {
-            var hsv = RGBtoHSV([r, g, b]);
-            if(hsv[2] > 240) {
+      if(apply_effects) {
+        var l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        //var l = (0.33 * r + 0.33 * g + 0.33 * b) / 255;
+        l = metalify_nonlincolor(l);
+        var i = Math.min(m.length - 1, Math.floor(l * m.length));
+        var i2 = Math.min(m.length - 1, i + 1);
+        var f1 = l * m.length - i;
+        var f0 = 1 - f1;
+        r = m[i][0] * f0 + m[i2][0] * f1;
+        g = m[i][1] * f0 + m[i2][1] * f1;
+        b = m[i][2] * f0 + m[i2][2] * f1;
+        if(opt_effects) {
+          for(var i = 0; i < opt_effects.length; i++) {
+            var effect = opt_effects[i];
+            if(!effect) continue;
+            var param = (opt_params && opt_params[i] != undefined) ? opt_params[i] : 1; // if undefined a default is used below
+
+            if(effect == 1) {
               var amount = 1 / (1 + param); // 0.5 for default param=1
               r *= amount;
               g *= amount;
               b *= amount;
             }
-          }
-          if(effect == 10) {
-            r = Math.pow(r, param);
-            g = Math.pow(g, param);
-            b = Math.pow(b, param);
-          }
-          if(effect == 11) {
-            a *= param;
-          }
-          if(effect == 12) {
-            var hsv = RGBtoHSV([r, g, b]);
-            var mul = param * 2;
-            hsv[1] = Math.min(hsv[1] + param * 255, 255);
-            var rgb = HSVtoRGB(hsv);
-            r = rgb[0];
-            g = rgb[1];
-            b = rgb[2];
-          }
-          if(effect == 13) {
-            if(a == 0) continue;
-            var touching_transparent = false;
-            if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
-            if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
-            if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
-            if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
-            if(touching_transparent) continue;
-            a *= param;
+            if(effect == 2) {
+              var amount = 1 + param * 0.35;
+              r = Math.min(r * amount, 255);
+              g = Math.min(g * amount, 255);
+              b = Math.min(b * amount, 255);
+            }
+            if(effect == 3) {
+              var hsv = RGBtoHSV([r, g, b]);
+              var mul = 1 / (1 + param); // 0.5 for default param=1
+              hsv[1] *= mul;
+              var rgb = HSVtoRGB(hsv);
+              r = rgb[0];
+              g = rgb[1];
+              b = rgb[2];
+            }
+            if(effect == 4) {
+              var hsv = RGBtoHSV([r, g, b]);
+              var mul = param * 2;
+              hsv[1] = Math.min(hsv[1] * mul, 255);
+              var rgb = HSVtoRGB(hsv);
+              r = rgb[0];
+              g = rgb[1];
+              b = rgb[2];
+            }
+            if(effect == 5) {
+              //l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+              var d = 1 - (x + y) / (w + h - 2);
+              //d = Math.sin(d * 16) * 64;
+              d = (d - 0.5) * 255;
+              //d = Math.abs(d - 0.5) * 255;
+              //d *= 64;
+              //if((x + y) & 1) d *= 1.1;
+              r = Math.min(Math.max(0, r + d), 255);
+              g = Math.min(Math.max(0, g + d), 255);
+              b = Math.min(Math.max(0, b + d), 255);
+            }
+            if(effect == 6) {
+              r /= 255;
+              g /= 255;
+              b /= 255;
+              r = (r * r * r + 0.05) * param + (r * 1 - param);
+              g = (g * g * g + 0.05) * param + (g * 1 - param)
+              b = (b * b * b + 0.05) * param + (b * 1 - param)
+              r = Math.min(Math.max(0, r * 255), 255);
+              g = Math.min(Math.max(0, g * 255), 255);
+              b = Math.min(Math.max(0, b * 255), 255);
+            }
+            if(effect == 7) {
+              if(a == 255) {
+                var touching_transparent = false;
+                //if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
+                //if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
+                if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
+                if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
+                if(touching_transparent) {
+                  r *= 0.85;
+                  g *= 0.85;
+                  b *= 0.85;
+                }
+              }
+            }
+            if(effect == 8) {
+              var hsv = RGBtoHSV([r, g, b]);
+              hsv[0] += Math.floor(param * 256);
+              if(hsv[0] > 255) hsv[0] -= 256;
+              var rgb = HSVtoRGB(hsv);
+              r = rgb[0];
+              g = rgb[1];
+              b = rgb[2];
+            }
+            if(effect == 9) {
+              var hsv = RGBtoHSV([r, g, b]);
+              if(hsv[2] > 240) {
+                var amount = 1 / (1 + param); // 0.5 for default param=1
+                r *= amount;
+                g *= amount;
+                b *= amount;
+              }
+            }
+            if(effect == 10) {
+              r = Math.pow(r, param);
+              g = Math.pow(g, param);
+              b = Math.pow(b, param);
+            }
+            if(effect == 11) {
+              a *= param;
+            }
+            if(effect == 12) {
+              var hsv = RGBtoHSV([r, g, b]);
+              var mul = param * 2;
+              hsv[1] = Math.min(hsv[1] + param * 255, 255);
+              var rgb = HSVtoRGB(hsv);
+              r = rgb[0];
+              g = rgb[1];
+              b = rgb[2];
+            }
+            if(effect == 13) {
+              if(a == 0) continue;
+              var touching_transparent = false;
+              if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
+              if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
+              if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
+              if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
+              if(touching_transparent) continue;
+              a *= param;
+            }
           }
         }
       }

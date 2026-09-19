@@ -539,15 +539,15 @@ function AutoActionState() {
   this.trigger = new AutoActionTriggerState();
   this.effect = new AutoActionEffectState();
 
-  this.trigger_season_override = [false, false, false, false];
-  this.trigger_seasonal = [new AutoActionTriggerState(), new AutoActionTriggerState(), new AutoActionTriggerState(), new AutoActionTriggerState()];
+  this.trigger_season_override = [false, false, false, false, false, false];
+  this.trigger_seasonal = [new AutoActionTriggerState(), new AutoActionTriggerState(), new AutoActionTriggerState(), new AutoActionTriggerState(), undefined, new AutoActionTriggerState()];
 
-  this.effect_season_override = [false, false, false, false];
-  this.effect_seasonal = [new AutoActionEffectState(), new AutoActionEffectState(), new AutoActionEffectState(), new AutoActionEffectState()];
+  this.effect_season_override = [false, false, false, false, false, false];
+  this.effect_seasonal = [new AutoActionEffectState(), new AutoActionEffectState(), new AutoActionEffectState(), new AutoActionEffectState(), undefined, new AutoActionEffectState()];
 
   this.getTrigger = function() {
     var season = getSeason();
-    if(autoActionSeasonOverrideUnlocked() && season >= 0 && season <= 3 && this.trigger_season_override[season]) {
+    if(autoActionSeasonOverrideUnlocked() && ((season >= 0 && season <= 3) || season == 5) && this.trigger_season_override[season]) {
       return this.trigger_seasonal[season];
     }
     return this.trigger;
@@ -555,7 +555,7 @@ function AutoActionState() {
 
   this.getEffect = function() {
     var season = getSeason();
-    if(autoActionSeasonOverrideUnlocked() && season >= 0 && season <= 3 && this.effect_season_override[season]) {
+    if(autoActionSeasonOverrideUnlocked() && ((season >= 0 && season <= 3) || season == 5) && this.effect_season_override[season]) {
       return this.effect_seasonal[season];
     }
     return this.effect;

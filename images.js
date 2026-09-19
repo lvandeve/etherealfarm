@@ -1297,11 +1297,11 @@ var image_mandrakefruit = `
 
 
 function metalifyPlatinumFruit(image) {
-  return metalify(image, metalheader5, [2, 6, 7], [0.2,0.85]);
+  return metalify(image, metalheader5, [2, 6, 7], [0.2,0.85], true);
 }
 
 function metalifyDiamondFruit(image) {
-  return metalify(image, metalheader11, [6,2], [0.35,0.66]);
+  return metalify(image, metalheader11, [6,2], [0.35,0.66], true);
 //setupImage(metalify(generateImage(image_pear), metalheader11, [2, 6, 7], [0.5])),
 //setupImage(metalify(generateImage(image_pear), metalheader11, [2, 6, 7, 12, 8], [0.15, 1, 1, 0.1, 160])),
 }

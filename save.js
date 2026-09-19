@@ -789,6 +789,7 @@ function encState(state, opt_raw_only) {
     processTrigger(o.trigger_seasonal[1]);
     processTrigger(o.trigger_seasonal[2]);
     processTrigger(o.trigger_seasonal[3]);
+    processTrigger(o.trigger_seasonal[5]);
     processBoolArray(o.trigger_season_override);
     processStructArrayEnd();
     processStructArrayBegin();
@@ -797,6 +798,7 @@ function encState(state, opt_raw_only) {
     processEffect(o.effect_seasonal[1]);
     processEffect(o.effect_seasonal[2]);
     processEffect(o.effect_seasonal[3]);
+    processEffect(o.effect_seasonal[5]);
     processStructArrayEnd();
     processBoolArray(o.effect_season_override);
     processUint6(o.done);
@@ -2417,26 +2419,30 @@ function decState(s) {
         o.enabled = processBool();
         if(save_version >= 262144*2+64*13+2) {
           count2 = processStructArrayBegin();
-          if(count2 != 5) return err(4);
+          if(count2 != ((save_version >= 262144*2+64*18+4) ? 6 : 5)) return err(4);
           processTrigger(o.trigger);
           processTrigger(o.trigger_seasonal[0]);
           processTrigger(o.trigger_seasonal[1]);
           processTrigger(o.trigger_seasonal[2]);
           processTrigger(o.trigger_seasonal[3]);
+          if(save_version >= 262144*2+64*18+4) processTrigger(o.trigger_seasonal[5]);
           processStructArrayEnd();
           o.trigger_season_override = processBoolArray();
+          while(o.trigger_season_override.length < 6) o.trigger_season_override.push(false); // before v 0.18.4 it had length 4, this fixes it
         } else {
           processTrigger(o.trigger);
         }
         count2 = processStructArrayBegin();
-        if(count2 != 5) return err(4);
+        if(count2 != ((save_version >= 262144*2+64*18+4) ? 6 : 5)) return err(4);
         processEffect(o.effect);
         processEffect(o.effect_seasonal[0]);
         processEffect(o.effect_seasonal[1]);
         processEffect(o.effect_seasonal[2]);
         processEffect(o.effect_seasonal[3]);
+        if(save_version >= 262144*2+64*18+4) processEffect(o.effect_seasonal[5]);
         processStructArrayEnd();
         o.effect_season_override = processBoolArray();
+        while(o.effect_season_override.length < 6) o.effect_season_override.push(false); // before v 0.18.4 it had length 4, this fixes it
         o.done = processUint6();
         if(save_version < 262144*2+64*13+2) o.done += processUint6() * 2; // used to be 'done2'
         o.time2 = processTime();

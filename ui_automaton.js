@@ -627,7 +627,11 @@ function showConfigureAutoActionTriggerSeasonsDialog(index, closefun) {
 
   var flex;
 
-  for(var i = 0; i < 4; i++) {
+  var seasons = [0,1,2,3];
+  if(state.challenges[challenge_infernal].unlocked) seasons.push(5);
+
+  for(var j = 0; j < seasons.length; j++) {
+    var i = seasons[j];
     var seasonname = seasonNames[i];
     flex = addControl(0.7);
     var name = 'Override ' + seasonname;
@@ -894,7 +898,11 @@ function showConfigureAutoActionEffectSeasonsDialog(index) {
 
   var flex;
 
-  for(var i = 0; i < 4; i++) {
+  var seasons = [0,1,2,3];
+  if(state.challenges[challenge_infernal].unlocked) seasons.push(5);
+
+  for(var j = 0; j < seasons.length; j++) {
+    var i = seasons[j];
     var seasonname = seasonNames[i];
     flex = addControl(0.7);
     makeCheckbox(flex, o.effect_season_override[i], 'Override ' + seasonname, bind(function(i, state) {

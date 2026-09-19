@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -6245,14 +6245,14 @@ var images_runestone = createPlantImages2(
 
 
 
-function metalifyPlantImage(image, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param) {
-  return setupImage(metalify(image, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param));
+function metalifyPlantImage(image, metalheader, opt_effects, opt_params, opt_keepgreen) {
+  return setupImage(metalify(image, metalheader, opt_effects, opt_params, opt_keepgreen));
 }
 
-function metalifyPlantImages(images, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param) {
+function metalifyPlantImages(images, metalheader, opt_effects, opt_params, opt_keepgreen) {
   var result = [];
   for(var i = 0; i < images.length; i++) {
-    result[i] = metalifyPlantImage(images[i], metalheader, opt_effect, opt_effect2, opt_effect3, opt_param);
+    result[i] = metalifyPlantImage(images[i], metalheader, opt_effects, opt_params, opt_keepgreen);
   }
   return result;
 }

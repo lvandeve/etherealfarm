@@ -30,6 +30,16 @@ function getChangeLog() {
     }
   }
 
+  text += '0.18.4 (2026-09-19)';
+  text += '<br/>• Added a new ethereal crop for ethereal tree level 32.';
+  text += '<br/>• Decreased the difficulty multiplier for repeating the igniferous challenge from 250x to 10x. This allows repeating it (and getting its reward, which is unchanged) more often.';
+  text += '<br/>• Buffed the squirrel "all ethereal crops boost" bonus from 25% to 30%.';
+  text += '<br/>• Auto-action season overrides now also support the infernal season.';
+  text += '<br/>• When auto-transcending while you got a next-tier fruit, it now shows a dialog warning about this.';
+  text += '<br/>• "Recover sacrificed fruit" (the button at the bottom of the fruit tab) will now keep up to 3 best-tier fruits indefinitely. Before, it would only keep fruits from the last run. Now, it keeps all fruits from the last run, and possibly a few best-tier ones from before. This is useful in case of auto-transcends.'; // In addition, separately also does this for mandrake fruits
+  text += '<br/>• Various bugfixes.'; // e.g. another fix for the messaging when trying to upgrade a fish with restrictions, and, made image of diamong pinapple more visible against its white background (by giving back green leaves)
+  text += '<br/><br/>';
+
   text += '0.18.3e Bugfixes (2026-09-12)';
   text += '<br/>• More consistent naming: made all tier numbers of crops, medals, fruits, ... 1-indexing based. This is a display-change only. Before, there was inconsistency with some names being 0-index based and others 1-index based.';
   text += '<br/>• Fixed display bug with "highest production ever this ascend" for ascended infinity field.';

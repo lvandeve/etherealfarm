@@ -234,6 +234,7 @@ function hardReset() {
   removeMedalChip();
   removeHelpChip();
   removeAutomatonIgnoredUpgradeChip();
+  removeAutoTranscendMissedGoodFruitChip();
 
   undoSave = '';
   lastUndoSaveTime = 0;
@@ -606,6 +607,7 @@ function endPreviousRun() {
   state.c_res.twigs.addInPlace(twigs);
   state.twigs = Num(0);
 
+  var prev_fruit_recover = state.fruit_recover;
   state.fruit_recover = [];
 
   // fruits
@@ -618,6 +620,55 @@ function endPreviousRun() {
       var f = state.fruit_sacr[i];
       if(f.justdropped) state.fruit_recover.push(f);
     }
+    // also keep up to 3 best-tier ones from _previous_ fruit_recover. The goal of this is to keep up to 3 next-tier fruits, when auto-transcend is making you lose those all the time
+    // this does not look at seasonal vs non-seasonal, it's really just to have up to 3 random fruits of highest tier available. To pick seasons etc... manual transcends for a while instead of auto-transcend is still required.
+    // independently also do this for mandrake fruits since their highest tiers are separate
+    var highest_tier = -1;
+    var highest_tier_mandrake = -1;
+    for(var i = 0; i < state.fruit_recover.length; i++) {
+      var r = state.fruit_recover[i];
+      if(r.type != 11) highest_tier = Math.max(highest_tier, r.tier);
+      if(r.type == 11) highest_tier_mandrake = Math.max(highest_tier_mandrake, r.tier);
+    }
+    for(var i = 0; i < prev_fruit_recover.length; i++) {
+      var r = prev_fruit_recover[i];
+      if(r.type != 11) highest_tier = Math.max(highest_tier, r.tier);
+      if(r.type == 11) highest_tier_mandrake = Math.max(highest_tier_mandrake, r.tier);
+    }
+    /*for(var i = 0; i < state.fruit_stored.length; i++) {
+      var r = state.fruit_stored[i];
+      if(r.type != 11) highest_tier = Math.max(highest_tier, r.tier);
+      if(r.type == 11) highest_tier_mandrake = Math.max(highest_tier_mandrake, r.tier);
+    }*/
+    var num_highest_tier = 0;
+    var num_highest_tier_mandrake = 0;
+    /*for(var i = 0; i < state.fruit_recover.length; i++) {
+      var r = state.fruit_recover[i];
+      if(r.type != 11 && r.tier == highest_tier) num_highest_tier++;
+      if(r.type == 11 && r.tier == highest_tier_mandrake) num_highest_tier_mandrake++;
+    }*/
+    if(highest_tier_mandrake >= 0) {
+      for(var i = 0; i < prev_fruit_recover.length; i++) {
+        if(num_highest_tier_mandrake >= 3) break;
+        var r = prev_fruit_recover[i];
+        if(r.type != 11) continue;
+        if(r.tier == highest_tier_mandrake) {
+          num_highest_tier_mandrake++;
+          state.fruit_recover.push(r);
+        }
+      }
+    }
+    for(var i = 0; i < prev_fruit_recover.length; i++) {
+      if(num_highest_tier >= 3) break;
+      var r = prev_fruit_recover[i];
+      if(r.type == 11) continue; // already handled above, prevent duplicates if mandrake happens to be highest tier
+      if(r.tier == highest_tier) {
+        num_highest_tier++;
+        state.fruit_recover.push(r);
+      }
+    }
+
+
     state.fruit_sacr = [];
     state.fruit_seen = true; // any new fruits are likely sacrificed now, no need to indicate fruit tab in red anymore
   }
@@ -926,6 +977,10 @@ function softReset(opt_challenge, opt_automated) {
   savegame_recovery_situation = false;
   auto_action_manual_window_timeout_enabled = false;
   auto_action_automatic_timeout_enabled = false;
+
+  if(!state.fruit_seen && opt_automated) {
+    showAutoTranscendMissedGoodFruitChip();
+  }
 
   // both of these functions are part of softReset, but endPreviousRun still assumes the old run's state (effects from the old challenge, ...) while
   // beginNextRun sets up the state for the new run, applies any new challenge effects, ...
@@ -2697,6 +2752,9 @@ function maybeUnlockEtherealCrops() {
   }
   if(state.treelevel2 >= 31) {
     unlockEtherealCrop(bee2_3);
+  }
+  if(state.treelevel2 >= 32) {
+    unlockEtherealCrop(lotus2_7);
   }
 }
 
@@ -7465,6 +7523,38 @@ function showAutomatonIgnoredUpgradeChip(upgrade_index) {
   textFlex.div.innerHTML = 'Notice: Automaton did not buy the following new upgrade that could be afforded before auto-trancend, because it must be performed manually at least once first: ' + '<br><br>' + upper(u.name) + '<br><br>To ensure this upgrade can get used automatically, buy it manually before auto-transcend activates next time, or disable auto-transcend for a while.';
 
   registerAction(automatonIgnoredUpgradeChipFlex.div, removeAutomatonIgnoredUpgradeChip, 'close message chip', {
+    short_only: true
+  });
+}
+
+////////////////////////////////////////////////////////////////////////
+
+var autoTranscendMissedGoodFruitChipFlex = undefined;
+
+function removeAutoTranscendMissedGoodFruitChip() {
+  if(!autoTranscendMissedGoodFruitChipFlex) return;
+
+  autoTranscendMissedGoodFruitChipFlex.removeSelf(gameFlex);
+  autoTranscendMissedGoodFruitChipFlex = undefined;
+}
+
+function showAutoTranscendMissedGoodFruitChip() {
+  removeAutoTranscendMissedGoodFruitChip();
+
+  autoTranscendMissedGoodFruitChipFlex = new Flex(gameFlex, 0.1, 0.73, 0.9, 0.97);
+  autoTranscendMissedGoodFruitChipFlex.div.style.backgroundColor = '#ffdf';
+  autoTranscendMissedGoodFruitChipFlex.div.style.border = '2px solid red';
+
+  var canvasFlex = new Flex(autoTranscendMissedGoodFruitChipFlex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
+  var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+  renderImage(images_apple[0], canvas);
+
+  var textFlex = new Flex(autoTranscendMissedGoodFruitChipFlex, [0, 0, 0.7], [0.5, 0, -0.45], 0.99, [0.5, 0, 0.45]);
+  //textFlex.div.style.color = '#fff';
+  textFlex.div.style.color = '#000';
+  textFlex.div.innerHTML = 'Notice: Auto-transcend happened while a next-tier fruit dropped! You may still be able to collect it with "Recover sacrified fruit", which you can find at the bottom of the fruits tab. To more efficiently collect next-tier fruits, consider doing transcend manually for a while.';
+
+  registerAction(autoTranscendMissedGoodFruitChipFlex.div, removeAutoTranscendMissedGoodFruitChip, 'close message chip', {
     short_only: true
   });
 }
