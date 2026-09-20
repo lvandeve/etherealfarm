@@ -2037,7 +2037,7 @@ function precomputeField_(prefield, opt_pretend) {
     }
   }
 
-  var have_brassica_fruit = getFruitAbility(FRUIT_BRASSICA, true) > 0;
+  var have_brassica_fruit = getFruitAbility(FRUIT_BRASSICA, 1) > 0;
 
   // pass 6: score heuristics for automaton auto-plant. The score of flower-beehive and nettle-malus pairs is assumed to already have been computed at this point
   var winter = getSeason() == 3;
@@ -6524,19 +6524,19 @@ var update = function(opt_ignorePause) {
 
 
     state.fruitspores_total = state.c_res.spores.add(actualgain.spores);
-    var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST, true);
+    var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST, 1);
     if(resin_fruit_level) {
-      var resin_fruit_bonus = getFruitBoost(getActiveFruit(), FRUIT_RESINBOOST, resin_fruit_level, getFruitTier(true));
+      var resin_fruit_bonus = getFruitBoost(getActiveFruit(), FRUIT_RESINBOOST, resin_fruit_level, getFruitTier(1));
       state.resinfruitspores.addInPlace(actualgain.spores.mul(resin_fruit_bonus));
     }
-    var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, true);
+    var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, 1);
     if(twigs_fruit_level) {
-      var twigs_fruit_bonus = getFruitBoost(getActiveFruit(), FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(true));
+      var twigs_fruit_bonus = getFruitBoost(getActiveFruit(), FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(1));
       state.twigsfruitspores.addInPlace(actualgain.spores.mul(twigs_fruit_bonus));
     }
-    var resin_twigs_fruit_level = getFruitAbility(FRUIT_RESIN_TWIGS, true);
+    var resin_twigs_fruit_level = getFruitAbility(FRUIT_RESIN_TWIGS, 1);
     if(resin_twigs_fruit_level) {
-      var resin_twigs_fruit_bonus = getFruitBoost(getActiveFruit(), FRUIT_RESIN_TWIGS, resin_twigs_fruit_level, getFruitTier(true));
+      var resin_twigs_fruit_bonus = getFruitBoost(getActiveFruit(), FRUIT_RESIN_TWIGS, resin_twigs_fruit_level, getFruitTier(1));
       state.resinfruitspores.addInPlace(actualgain.spores.mul(resin_twigs_fruit_bonus));
       state.twigsfruitspores.addInPlace(actualgain.spores.mul(resin_twigs_fruit_bonus));
     }

@@ -192,8 +192,8 @@ function makeTreeDialog() {
       }
 
       text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString();
-      if(getFruitAbility(FRUIT_TREELEVEL, true) > 0) {
-        var mul = treeLevelFruitBoost(getFruitTier(true), getFruitAbility(FRUIT_TREELEVEL, true), state.treelevel).addr(1);
+      if(getFruitAbility(FRUIT_TREELEVEL, 1) > 0) {
+        var mul = treeLevelFruitBoost(getFruitTier(1), getFruitAbility(FRUIT_TREELEVEL, 1), state.treelevel).addr(1);
         text += ' (of which ' + mul.toPercentString() + ' multiplicative from the fruit)';
       }
       text += '<br>';

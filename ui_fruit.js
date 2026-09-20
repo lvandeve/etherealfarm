@@ -603,22 +603,22 @@ function getFruitAbilityDetailsText(f, a, level) {
   } else {
     var cost = getFruitAbilityCost(a, level, f.tier);
 
-    var percent = getFruitBoost(undefined, a, level, f.tier).toPercentString();
-    var percent2 = getFruitBoost(undefined, a, level + 1, f.tier).toPercentString();
+    var percent = getFruitBoost(undefined, a, level, f.tier, undefined, undefined, 0).toPercentString();
+    var percent2 = getFruitBoost(undefined, a, level + 1, f.tier, undefined, undefined, 0).toPercentString();
 
     text += 'Current level: ' + percent;
-    if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(undefined, a, level, f.tier, undefined, 1).toPercentString() + ')';
+    if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(undefined, a, level, f.tier, undefined, 1, 0).toPercentString() + ')';
 
-    var enhance = getFruitAbilityFor(f, FRUIT_GROW_ENHANCE, true);
+    var enhance = getFruitAbilityFor(f, FRUIT_GROW_ENHANCE, 0);
     if(enhance && a != FRUIT_GROW_ENHANCE) {
       //text += '<br>';
-      var percent3 = getFruitBoost(f, a, level, f.tier).toPercentString();
+      var percent3 = getFruitBoost(f, a, level, f.tier, undefined, undefined, 0).toPercentString();
       text += ' (with enhance: ' + percent3 + ')';
     }
 
     text += '<br>';
     text += 'Next level: ' + percent2;
-    if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(undefined, a, level + 1, f.tier, undefined, 1).toPercentString() + ')';
+    if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(undefined, a, level + 1, f.tier, undefined, 1, 0).toPercentString() + ')';
     text += ', cost: ' + cost.toString();
 
   }
@@ -1091,7 +1091,7 @@ function getFruitTooltipText(f, opt_label) {
 
   text += 'Tier ' + toRomanUpTo(f.tier + TIER0) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
 
-  var enhance = getFruitAbilityFor(f, FRUIT_GROW_ENHANCE, true);
+  var enhance = getFruitAbilityFor(f, FRUIT_GROW_ENHANCE, 0);
 
   text += '<br>';
   for(var i = 0; i < f.abilities.length; i++) {
@@ -1103,9 +1103,9 @@ function getFruitTooltipText(f, opt_label) {
     } else if(a == FRUIT_NONE) {
       text += 'Ability: ' + upper(f.abilityToString(i));
     } else {
-      var percent = getFruitBoost(undefined, a, level, f.tier).toPercentString();
+      var percent = getFruitBoost(undefined, a, level, f.tier, undefined, undefined, 0).toPercentString();
       if(enhance && a != FRUIT_GROW_ENHANCE) {
-        percent += ' 🡒 ' + getFruitBoost(f, a, level, f.tier).toPercentString();
+        percent += ' 🡒 ' + getFruitBoost(f, a, level, f.tier, undefined, undefined, 0).toPercentString();
       }
 
       text += 'Ability: ' + upper(f.abilityToString(i)) + ' (' + percent + ')';

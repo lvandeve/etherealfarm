@@ -2330,15 +2330,22 @@ function getActiveFruit() {
 }
 
 // returns the level of a specific fruit ability, or 0 if you don't have that ability
-// opt_check_challenge: if true, takes state of basic challenge, igniferous challenge, etc..., into account
+// opt_check_challenge: this has 3 possible values:
+//   undefined: the default, which is 1
+//   0:  does not take challenges into account, returns the full value. This is for display of the original effect
+//   1: takes challenges into account. This should be used for any actual gameplay
+//   2: partially takes challenges into account: challenges that fully disable the fruit are ignored (it will return the fruit value). Challenges that alter the fruit values but don't completely disable it are taken into account. This is intended for display in tooltips, where it's useful to know the fruit values even if a fruit does not work during this challenge, but for _altered_ values it should be showing those and not the original
 function getFruitAbilityFor(f, ability, opt_check_challenge) {
+  if(opt_check_challenge == undefined) opt_check_challenge = 1;
+
   if(!f) return 0;
-  if(opt_check_challenge && basicChallenge() == 2) return 0;
-  if(opt_check_challenge && state.challenge == challenge_igniferous && f.type != 11) return 0; // only mandrake fruit works here
+
+  if(opt_check_challenge == 1 && basicChallenge() == 2) return 0;
+  if(opt_check_challenge == 1 && state.challenge == challenge_igniferous && f.type != 11) return 0; // only mandrake fruit works here
   for(var i = 0; i < f.abilities.length; i++) {
     if(f.abilities[i] == ability) {
       var result = f.levels[i];
-      if(opt_check_challenge && basicChallenge()) {
+      if(!!opt_check_challenge && !!basicChallenge()) {
         if(result > 3) result = 3;
       }
       return result;
@@ -2349,7 +2356,7 @@ function getFruitAbilityFor(f, ability, opt_check_challenge) {
 }
 
 // returns the level of a specific fruit ability, or 0 if you don't have that ability
-// opt_check_challenge: if true, takes state of basic challenge, igniferous challenge, etc..., into account
+// opt_check_challenge: see info at getFruitAbilityFor
 function getFruitAbility(ability, opt_check_challenge) {
   return getFruitAbilityFor(getActiveFruit(), ability, opt_check_challenge);
 }
@@ -2357,13 +2364,15 @@ function getFruitAbility(ability, opt_check_challenge) {
 // similar to getFruitAbility but conveniently takes multi-season fruits into account
 // will check FRUIT_SUMMER_AUTUMN etc... if given just FRUIT_SUMMER or FRUIT_AUTUMN etc..., if the necessary squirrel upgrades are purchased
 // returns array of level and actual ability. Actual ability is usually same as the input ability, but can be e.g. FRUIT_SPRING_SUMMER if input was FRUIT_SPRING but fruit has FRUIT_SPRING_SUMMER
-// opt_check_challenge: if true, takes state of basic challenge, igniferous challenge, etc..., into account
+// opt_check_challenge: see info at getFruitAbilityFor
 function getFruitAbility_MultiSeasonal(ability, opt_check_challenge) {
+  if(opt_check_challenge == undefined) opt_check_challenge = 1;
+
   var f = getActiveFruit();
   if(!f) return [0, ability];
 
-  if(opt_check_challenge && basicChallenge() == 2) return [0, ability];
-  if(opt_check_challenge && state.challenge == challenge_igniferous && f.type != 11) return [0, ability]; // only mandrake fruit works here
+  if(opt_check_challenge == 1 && basicChallenge() == 2) return [0, ability];
+  if(opt_check_challenge == 1 && state.challenge == challenge_igniferous && f.type != 11) return [0, ability]; // only mandrake fruit works here
 
   var result = getFruitAbility(ability, opt_check_challenge);
   if(result > 0) return [result, ability];
@@ -2385,18 +2394,21 @@ function getFruitAbility_MultiSeasonal(ability, opt_check_challenge) {
     if(last == FRUIT_WINTER_SPRING) return [(ability == FRUIT_WINTER || ability == FRUIT_SPRING) ? 1 : 0, last];
   }
 
-  if(opt_check_challenge && !!basicChallenge() && ability > 2) ability = 2;
+  if(!!opt_check_challenge && !!basicChallenge() && ability > 2) ability = 2;
 
   return [0, ability];
 }
 
-// opt_check_challenge: if true, takes state of basic challenge, igniferous challenge, etc..., into account
+// opt_check_challenge: see info at getFruitAbilityFor
 function getFruitTier(opt_check_challenge) {
+  if(opt_check_challenge == undefined) opt_check_challenge = 1;
+
   var f = getActiveFruit();
   if(!f) return 0;
-  if(opt_check_challenge && basicChallenge() == 2) return 0; // return lowest tier, in fact fruits are completely disabled during the truly basic challenge
-  if(opt_check_challenge && state.challenge == challenge_igniferous && f.type != 11) return 0; // only mandrake fruit works here
-  if(opt_check_challenge && basicChallenge()) {
+
+  if(opt_check_challenge == 1 && basicChallenge() == 2) return 0; // return lowest tier, in fact fruits are completely disabled during the truly basic challenge
+  if(opt_check_challenge == 1 && state.challenge == challenge_igniferous && f.type != 11) return 0; // only mandrake fruit works here
+  if(!!opt_check_challenge && !!basicChallenge()) {
     // max the fruit that could drop at the current tree level, during the basic challenge
     var max = getNewFruitTier(1.0, state.treelevel, false);
     var result = f.tier;
