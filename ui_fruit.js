@@ -1524,6 +1524,7 @@ function isFruitInteresting(fruit) {
   var newseason = (fruit.type > 0);
   for(var i = 0; i < state.fruit_stored.length; i++) {
     var f = state.fruit_stored[i];
+    if(fruit.type != 11 && f.type == 11) continue; // skip mandrakes for this count, if you have e.g. 5 ruby fruits and 12 emerald mandrakes, the emerald mandrakes should _not_ make it consider the ruby fruits to be interesting because mandrakes are a separately collected type of fruit
     if(!f) continue;
     if(f.tier == best) numbest++;
     else if(f.tier + 1 == best) numbest2++;
