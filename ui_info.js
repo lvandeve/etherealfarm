@@ -415,7 +415,7 @@ function getResourceDetails(index) {
         text += 'Production stats below represent the original seeds production of crops, which is consumed by mushroom towers. Those production numbers are not the seed income and don\'t actually go to your stacks however, since seed income is gained by exterminating pests.';
         text += '<br/><br/>';
       }
-      if(res_gain.neq(res_gain_pos)) {
+      if(!res_gain.near(res_gain_pos, 0.002)) {
         text += 'Production (' + name + '/s):<br/>';
         text += '• To stacks: ' + res_gain.toString() + '/s (= going to your resources)<br/>';
         text += '• To consumers: ' + (res_gain_pos.sub(res_gain)).toString() + '/s (= going to neighboring mushrooms)<br/>';
@@ -446,7 +446,7 @@ function getResourceDetails(index) {
         text += 'Production stats below represent the original spore production of mushrooms, which is converted to damage using a formula. Those production numbers are not the actual spores income since that is gained by exterminating pests instead, each wave will drop enough spores to gain one tree level.';
         text += '<br/><br/>';
       }
-      if(res_gain.neq(res_gain_pos)) {
+      if(!res_gain.near(res_gain_pos, 0.002)) {
         text += 'Production (' + name + '/s):<br/>';
         text += '• Actual: ' + res_gain.toString() + '/s (= going to your resources)<br/>';
         text += '• Potential: ' + res_gain_pos.toString() + '/s (= what mushrooms can produce if given enough seed income from neighboring berries or they could over-consume)<br/>';
@@ -481,7 +481,7 @@ function getResourceDetails(index) {
       var res_expected = gain_expected.atIndex(index);
       var res_expected_hyp = gain_expected_hyp.atIndex(index);
       text += 'Expected when all fullgrown: ';
-      if(res_expected.neq(res_expected_hyp)) {
+      if(!res_expected.near(res_expected_hyp, 0.002)) {
         if(index == 0) text += res_expected.toString() + '/s (hypothetical if mushrooms could over-consume: ' + res_expected_hyp.toString() + '/s)';
         else text += res_expected.toString() + '/s (potential: ' + res_expected_hyp.toString() + '/s)'; // potential means: if mushrooms could over-consume, that is, there would be no seeds restriction
       } else {
